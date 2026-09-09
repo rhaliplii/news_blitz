@@ -1189,9 +1189,7 @@ body.playing .frame{ margin:0 0 auto; }
 (function () {
   try {
     var t = JSON.parse(localStorage.getItem("newsblitz.theme.v1"));
-    if (t !== "light" && t !== "dark") {
-      t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
-    }
+    if (t !== "light" && t !== "dark") t = "dark";      // dark is the default
     document.documentElement.setAttribute("data-theme", t);
   } catch (e) { document.documentElement.setAttribute("data-theme", "dark"); }
 })();
@@ -1984,14 +1982,12 @@ body.playing .frame{ margin:0 0 auto; }
      --------------------------------------------------------------------------
      Both themes are pure CSS custom-property sets keyed off [data-theme] on
      <html>, so switching is one attribute write and never touches layout.
-     Dark is the default; the system preference is only consulted on a first
-     visit, and any manual choice is remembered from then on.
+     Dark is the default on a first visit; a manual choice is remembered.
      ====================================================================== */
+  /* Dark is the default. The system preference is not consulted; only an
+     explicit choice from the toggle is remembered. */
   var THEME = store(KEY.theme);
-  if (THEME !== "light" && THEME !== "dark") {
-    THEME = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)
-      ? "light" : "dark";
-  }
+  if (THEME !== "light" && THEME !== "dark") THEME = "dark";
 
   function applyTheme(t) {
     THEME = t;
