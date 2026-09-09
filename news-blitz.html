@@ -1,0 +1,2157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" />
+<meta name="theme-color" content="#0F1012" />
+<meta name="description" content="News Blitz — react fast to breaking financial headlines. Bullish or Bearish? A Profit.com mini game." />
+<title>News Blitz — Profit.com Mini Games</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================================
+   NEWS BLITZ — single-file mini game for Profit.com
+   Design tokens below are lifted from profit.com's live stylesheet:
+     brand teal   #22A180 / #3DBB9A / #07D8A2
+     surfaces     #141518 / #1e2227 / #212327 / #26282E
+     borders      #26282E / #383d46
+     typography   Inter
+   ========================================================================= */
+
+:root{
+  /* --- surfaces --- */
+  --bg:            #0F1012;
+  --bg-2:          #141518;
+  --surface:       #1A1C20;
+  --surface-2:     #212327;
+  --surface-3:     #26282E;
+  --line:          #26282E;
+  --line-2:        #383D46;
+
+  /* --- text --- */
+  --text:          #FFFFFF;
+  --text-2:        #A8B0BA;
+  --text-hi:       rgba(255,255,255,.92);
+  --text-3:        #6E7681;
+
+  /* --- brand --- */
+  --brand:         #22A180;
+  --brand-2:       #3DBB9A;
+  --brand-hi:      #07D8A2;
+  --brand-soft:    rgba(7,216,162,.10);
+  --brand-line:    rgba(7,216,162,.28);
+
+  /* --- semantic --- */
+  --bull:          #07D8A2;
+  --bull-soft:     rgba(7,216,162,.12);
+  --bear:          #F6465D;
+  --bear-soft:     rgba(246,70,93,.12);
+  --gold:          #FBBC04;
+
+  /* --- geometry --- */
+  --r-xl: 28px;
+  --r-lg: 22px;
+  --r-md: 16px;
+  --r-sm: 12px;
+  --r-xs: 9px;
+
+  /* --- spacing scale --- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s7: 32px; --s8: 44px;
+
+  /* --- motion --- */
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --snap: cubic-bezier(.34,1.56,.64,1);
+
+  --shadow-1: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-2: 0 8px 30px rgba(0,0,0,.45);
+  --shadow-3: 0 24px 60px rgba(0,0,0,.55);
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size:16px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:'cv02','cv03','cv04','ss01';
+  overflow-x:hidden;
+  overscroll-behavior-y:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ambient brand glow — cheap, GPU friendly, never repaints */
+body::before{
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(900px 520px at 50% -12%, rgba(34,161,128,.20), transparent 62%),
+    radial-gradient(600px 400px at 92% 8%, rgba(7,216,162,.07), transparent 60%),
+    radial-gradient(700px 500px at 4% 96%, rgba(19,50,49,.55), transparent 65%);
+}
+/* faint grid texture */
+body::after{
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.35;
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(circle at 50% 30%, #000 0%, transparent 72%);
+  -webkit-mask-image:radial-gradient(circle at 50% 30%, #000 0%, transparent 72%);
+}
+
+button{ font:inherit; color:inherit; border:0; background:none; cursor:pointer; }
+input{ font:inherit; }
+h1,h2,h3,p,ul,li{ margin:0; padding:0; }
+ul{ list-style:none; }
+.num{ font-variant-numeric:tabular-nums; font-feature-settings:'tnum' 1; }
+
+/* ------------------------------------------------------------------ shell */
+.app{
+  position:relative; z-index:1;
+  min-height:100dvh;
+  display:flex; flex-direction:column; align-items:center;
+  padding:
+    calc(env(safe-area-inset-top) + 18px)
+    max(16px, env(safe-area-inset-left))
+    calc(env(safe-area-inset-bottom) + 20px)
+    max(16px, env(safe-area-inset-right));
+}
+.frame{ width:100%; max-width:520px; margin:auto 0; }
+/* during a question the layout must not re-centre when the explanation opens */
+body.playing .frame{ margin:0 0 auto; }
+
+/* view switching — no reloads, no layout thrash */
+.view{ display:none; }
+.view.is-active{ display:block; animation:viewIn .38s var(--ease-out) both; }
+@keyframes viewIn{
+  from{ opacity:0; transform:translate3d(0,14px,0) scale(.985); }
+  to  { opacity:1; transform:none; }
+}
+
+/* ------------------------------------------------------------ primitives */
+.card{
+  background:linear-gradient(180deg, rgba(38,40,46,.62), rgba(26,28,32,.72));
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+}
+
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 11px; border-radius:999px;
+  background:var(--surface-2); border:1px solid var(--line);
+  font-size:11.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-2);
+}
+
+/* buttons ------------------------------------------------------------- */
+.btn{
+  position:relative; display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; min-height:56px; padding:15px 20px;
+  border-radius:var(--r-md);
+  font-size:16px; font-weight:650; letter-spacing:-.01em;
+  border:1px solid var(--line-2);
+  background:var(--surface-2);
+  color:var(--text);
+  transition:transform .13s var(--ease), background .18s var(--ease),
+             border-color .18s var(--ease), box-shadow .18s var(--ease), opacity .18s;
+  will-change:transform;
+  overflow:hidden;
+  touch-action:manipulation;
+}
+.btn:hover{ background:var(--surface-3); border-color:#454b55; }
+.btn:active{ transform:scale(.975); }
+.btn:focus-visible{ outline:2px solid var(--brand-hi); outline-offset:3px; }
+.btn[disabled]{ cursor:default; opacity:.55; }
+.btn[disabled]:hover{ background:var(--surface-2); border-color:var(--line-2); }
+
+.btn--primary{
+  background:linear-gradient(180deg, var(--brand-2), var(--brand));
+  border-color:rgba(7,216,162,.5);
+  color:#06120E;
+  font-weight:750;
+  box-shadow:0 8px 24px rgba(34,161,128,.32), inset 0 1px 0 rgba(255,255,255,.32);
+}
+.btn--primary:hover{
+  background:linear-gradient(180deg, #4FCBA9, #27B08B);
+  border-color:rgba(7,216,162,.7);
+  box-shadow:0 10px 30px rgba(34,161,128,.42), inset 0 1px 0 rgba(255,255,255,.32);
+}
+.btn--ghost{ background:transparent; border-color:var(--line); color:var(--text-2); }
+.btn--ghost:hover{ background:var(--surface); color:var(--text); }
+.btn--sm{ min-height:44px; padding:10px 16px; font-size:14px; border-radius:var(--r-sm); width:auto; }
+
+/* ripple-ish press bloom */
+.btn::after{
+  content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:radial-gradient(circle at var(--px,50%) var(--py,50%), rgba(255,255,255,.22), transparent 55%);
+  opacity:0; transition:opacity .4s var(--ease);
+}
+.btn:active::after{ opacity:1; transition:none; }
+
+/* ------------------------------------------------------------------ menu */
+.brandbar{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:var(--s7);
+}
+.wordmark{
+  display:flex; align-items:center; gap:9px;
+  font-size:13px; font-weight:700; letter-spacing:-.01em; color:var(--text-2);
+}
+.wordmark b{ color:var(--text); font-weight:800; }
+.wordmark .mk{
+  width:26px; height:26px; border-radius:8px; display:grid; place-items:center;
+  background:linear-gradient(145deg, var(--brand-hi), var(--brand));
+  color:#06120E; font-size:14px; font-weight:900;
+  box-shadow:0 4px 14px rgba(7,216,162,.3);
+}
+.iconbtn{
+  width:38px; height:38px; border-radius:11px; display:grid; place-items:center;
+  border:1px solid var(--line); background:var(--surface); color:var(--text-2);
+  font-size:15px; transition:.18s var(--ease);
+}
+.iconbtn:hover{ color:var(--text); border-color:var(--line-2); background:var(--surface-2); }
+.iconbtn:active{ transform:scale(.92); }
+
+.hero{ text-align:center; margin-bottom:var(--s7); }
+.hero h1{
+  font-size:clamp(46px, 15vw, 70px);
+  line-height:.92; font-weight:900; letter-spacing:-.045em;
+  margin:6px 0 14px;
+}
+.hero h1 .accent{
+  background:linear-gradient(115deg, var(--brand-hi) 10%, var(--brand-2) 55%, #6FE7C6 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero .tag{
+  font-size:clamp(15px,4.2vw,17px); font-weight:600; color:var(--text-2); letter-spacing:-.01em;
+}
+
+.welcome{ padding:var(--s5); margin-bottom:12px; text-align:center; }
+.welcome p{
+  font-size:14.5px; line-height:1.55; color:var(--text-2); text-wrap:pretty;
+}
+
+.section-title{
+  margin:var(--s6) 0 var(--s4); text-align:center;
+  font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--text-3);
+}
+
+.howto{ padding:var(--s5); margin-bottom:var(--s5); }
+.howto h3{
+  display:flex; align-items:center; gap:9px; margin-bottom:var(--s4);
+  font-size:11.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-3);
+}
+.howto h3 .i{
+  width:18px; height:18px; border-radius:50%; display:grid; place-items:center;
+  background:var(--brand-soft); border:1px solid var(--brand-line); color:var(--brand-hi);
+  font-size:11px; font-weight:800; letter-spacing:0; font-style:italic;
+}
+.howto ul{ display:grid; gap:15px; }
+.howto li{
+  display:flex; gap:13px; align-items:center;
+  font-size:15.5px; font-weight:500; color:var(--text-hi); line-height:1.4;
+}
+.howto li strong{ color:var(--text); font-weight:650; }
+.howto .ic{
+  flex:0 0 30px; height:30px; border-radius:9px; display:grid; place-items:center;
+  background:var(--surface-2); border:1px solid var(--line); font-size:14px;
+}
+
+.menu-actions{ display:grid; gap:10px; }
+
+.mode-btn{
+  display:flex; align-items:center; gap:14px; text-align:left;
+  width:100%; padding:16px 18px; border-radius:var(--r-md);
+  border:1px solid var(--line); background:var(--surface);
+  transition:transform .14s var(--ease), border-color .2s, background .2s, box-shadow .2s;
+  will-change:transform;
+}
+.mode-btn:hover{ background:var(--surface-2); border-color:var(--line-2); transform:translateY(-1px); }
+.mode-btn:active{ transform:scale(.985); }
+.mode-btn:focus-visible{ outline:2px solid var(--brand-hi); outline-offset:3px; }
+.mode-btn .ic{
+  flex:0 0 44px; height:44px; border-radius:13px; display:grid; place-items:center;
+  font-size:20px; background:var(--surface-2); border:1px solid var(--line);
+}
+.mode-btn .txt{ flex:1; min-width:0; }
+.mode-btn .t{ display:block; font-size:16px; font-weight:700; letter-spacing:-.015em; }
+.mode-btn .d{ display:block; font-size:13px; color:var(--text-3); margin-top:2px; line-height:1.35; }
+.mode-btn .arw{ color:var(--text-3); font-size:18px; transition:transform .2s var(--ease), color .2s; }
+.mode-btn:hover .arw{ transform:translateX(3px); color:var(--brand-hi); }
+
+.mode-btn--hero{
+  background:linear-gradient(135deg, rgba(34,161,128,.18), rgba(7,216,162,.05) 60%, transparent);
+  border-color:var(--brand-line);
+  box-shadow:0 8px 30px rgba(34,161,128,.14);
+}
+.mode-btn--hero:hover{ border-color:rgba(7,216,162,.5); background:linear-gradient(135deg, rgba(34,161,128,.26), rgba(7,216,162,.08) 60%, transparent); }
+.mode-btn--hero .ic{ background:linear-gradient(145deg, var(--brand-hi), var(--brand)); border-color:transparent; color:#06120E; box-shadow:0 6px 18px rgba(7,216,162,.28); }
+
+.menu-foot{
+  margin-top:var(--s6); display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
+}
+
+/* ------------------------------------------------------------------- HUD */
+.topbar{
+  display:flex; align-items:center; gap:12px; margin-bottom:14px;
+}
+.topbar .title{
+  flex:1; min-width:0; text-align:center;
+  font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--text-3);
+}
+
+.hud{
+  display:flex; align-items:center; gap:8px; margin-bottom:12px;
+}
+.stat{
+  flex:1; min-width:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  padding:9px 6px; border-radius:var(--r-sm);
+  background:var(--surface); border:1px solid var(--line);
+}
+.stat .l{
+  font-size:9.5px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--text-3);
+}
+.stat .v{
+  font-size:19px; font-weight:800; letter-spacing:-.02em; line-height:1.15;
+  display:flex; align-items:center; gap:4px;
+}
+.stat .v.is-bump{ animation:bump .42s var(--snap); }
+@keyframes bump{ 0%{transform:scale(1)} 35%{transform:scale(1.28)} 100%{transform:scale(1)} }
+.stat--coins .v{ color:var(--gold); }
+.stat--streak .v{ color:#FF8A3D; }
+
+.hearts{ display:flex; gap:4px; font-size:15px; line-height:1; }
+.hearts i{ font-style:normal; transition:transform .3s var(--snap), opacity .3s, filter .3s; }
+.hearts i.off{ opacity:.22; filter:grayscale(1); transform:scale(.82); }
+.hearts i.gain{ animation:bump .5s var(--snap); }
+.hearts i.lose{ animation:heartBreak .5s var(--ease) both; }
+@keyframes heartBreak{
+  0%{ transform:scale(1.3); filter:none; opacity:1 }
+  100%{ transform:scale(.82); filter:grayscale(1); opacity:.22 }
+}
+
+/* ----------------------------------------------------------- timer bar */
+.timerwrap{ margin-bottom:12px; transition:opacity .3s var(--ease); }
+.timerwrap.done{ opacity:.35; }
+.timerhead{
+  display:flex; align-items:baseline; justify-content:space-between; margin-bottom:7px;
+}
+.timerhead .lbl{
+  font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--text-3);
+}
+.timerhead .val{
+  font-size:15px; font-weight:800; letter-spacing:-.02em; color:var(--text);
+  transition:color .2s;
+}
+.timerhead .val.warn{ color:var(--bear); animation:tick .5s ease-in-out infinite; }
+@keyframes tick{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.13) } }
+
+.track{
+  height:6px; border-radius:99px; background:var(--surface-2);
+  border:1px solid var(--line); overflow:hidden; position:relative;
+}
+.fill{
+  position:absolute; inset:0; transform-origin:left center;
+  border-radius:99px;
+  background:linear-gradient(90deg, var(--brand), var(--brand-hi));
+  box-shadow:0 0 12px rgba(7,216,162,.5);
+  transition:background .3s, box-shadow .3s;
+}
+.fill.warn{
+  background:linear-gradient(90deg, #F6465D, #FF7A55);
+  box-shadow:0 0 14px rgba(246,70,93,.55);
+}
+
+/* --------------------------------------------------------- headline card */
+.qcard{
+  position:relative; padding:38px 24px; margin-bottom:14px; overflow:hidden;
+  display:flex; align-items:center; min-height:186px;
+  transition:border-color .3s var(--ease), box-shadow .3s var(--ease), transform .3s var(--ease);
+}
+.qcard.correct{ border-color:rgba(7,216,162,.55); box-shadow:0 0 0 1px rgba(7,216,162,.25), 0 18px 50px rgba(7,216,162,.14); }
+.qcard.wrong  { border-color:rgba(246,70,93,.55); box-shadow:0 0 0 1px rgba(246,70,93,.25), 0 18px 50px rgba(246,70,93,.14); animation:shake .42s var(--ease); }
+@keyframes shake{
+  0%,100%{ transform:translateX(0) }
+  18%{ transform:translateX(-8px) } 38%{ transform:translateX(7px) }
+  58%{ transform:translateX(-4px) } 78%{ transform:translateX(3px) }
+}
+.qcard .flash{
+  position:absolute; inset:0; pointer-events:none; opacity:0; border-radius:inherit;
+}
+.qcard.correct .flash{ background:radial-gradient(120% 90% at 50% 0%, rgba(7,216,162,.30), transparent 70%); animation:flashIn .65s var(--ease-out); }
+.qcard.wrong   .flash{ background:radial-gradient(120% 90% at 50% 0%, rgba(246,70,93,.30), transparent 70%); animation:flashIn .65s var(--ease-out); }
+@keyframes flashIn{ 0%{opacity:1} 100%{opacity:0} }
+
+.headline{
+  font-size:clamp(21px, 6vw, 27px);
+  line-height:1.24; font-weight:750; letter-spacing:-.028em;
+  text-wrap:balance;
+  animation:hlIn .42s var(--ease-out) both;
+}
+@keyframes hlIn{ from{ opacity:0; transform:translateY(9px) } to{ opacity:1; transform:none } }
+
+/* ------------------------------------------------------------- answers */
+.answers{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.ans{
+  position:relative; display:flex; flex-direction:column; align-items:center; gap:5px;
+  padding:20px 12px; border-radius:var(--r-md);
+  border:1px solid var(--line-2); background:var(--surface);
+  transition:transform .14s var(--ease), background .2s, border-color .2s, box-shadow .2s, opacity .25s;
+  will-change:transform; touch-action:manipulation; overflow:hidden;
+}
+.ans .glyph{
+  width:30px; height:30px; display:block;
+  transition:transform .25s var(--snap);
+}
+.ans .glyph svg{ width:100%; height:100%; display:block; }
+.ans .t{ font-size:15.5px; font-weight:750; letter-spacing:-.015em; color:inherit; }
+.ans:active{ transform:scale(.965); }
+.ans:focus-visible{ outline:2px solid currentColor; outline-offset:3px; }
+
+/* the call itself is colour-coded: green reads long, red reads short */
+.ans--bull{
+  color:var(--bull);
+  border-color:rgba(7,216,162,.34);
+  background:linear-gradient(180deg, rgba(7,216,162,.11), rgba(7,216,162,.028));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 6px 22px rgba(7,216,162,.09);
+}
+.ans--bear{
+  color:var(--bear);
+  border-color:rgba(246,70,93,.34);
+  background:linear-gradient(180deg, rgba(246,70,93,.11), rgba(246,70,93,.028));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 6px 22px rgba(246,70,93,.09);
+}
+.ans--bull:hover{
+  border-color:rgba(7,216,162,.62);
+  background:linear-gradient(180deg, rgba(7,216,162,.19), rgba(7,216,162,.06));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 30px rgba(7,216,162,.2);
+}
+.ans--bear:hover{
+  border-color:rgba(246,70,93,.62);
+  background:linear-gradient(180deg, rgba(246,70,93,.19), rgba(246,70,93,.06));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 30px rgba(246,70,93,.2);
+}
+.ans--bull:hover .glyph{ transform:translateY(-3px) scale(1.06); }
+.ans--bear:hover .glyph{ transform:translateY(3px) scale(1.06); }
+
+.ans[disabled]{ cursor:default; }
+.ans.dim{ opacity:.34; }
+
+/* Each button keeps its own meaning colour after the call, so the result is
+   shown by emphasis and a corner badge rather than by recolouring. */
+.ans.mark-correct{
+  border-color:currentColor;
+  box-shadow:0 0 0 1px currentColor, 0 12px 34px rgba(0,0,0,.35);
+  filter:brightness(1.14) saturate(1.08);
+}
+.ans.mark-wrong{
+  opacity:.52;
+  filter:grayscale(.5);
+  border-color:var(--line-2);
+  box-shadow:none;
+}
+.ans.mark-correct::after,
+.ans.mark-wrong::after{
+  position:absolute; top:9px; right:10px;
+  width:19px; height:19px; border-radius:50%;
+  display:grid; place-items:center;
+  font-size:11px; font-weight:900; line-height:1;
+  animation:pop .35s var(--snap) both;
+}
+.ans.mark-correct::after{
+  /* currentColor inside this block would resolve to the colour set here, so the
+     badge is drawn as an outline in the button's own colour instead of a fill. */
+  content:'\2713';
+  background:rgba(0,0,0,.4);
+  border:1.5px solid currentColor;
+}
+.ans.mark-wrong::after{
+  content:'\2715';
+  background:transparent; color:var(--text-2);
+  border:1px solid var(--line-2);
+}
+
+
+/* --------------------------------------------------------- explanation */
+.reveal{ margin-top:12px; }
+.reveal[hidden]{ display:none !important; }
+.reveal-in{ animation:revealIn .4s var(--ease-out) both; }
+@keyframes revealIn{ from{ opacity:0; transform:translateY(12px) } to{ opacity:1; transform:none } }
+
+.feedback{ padding:20px 20px 18px; }
+.feedback .result{
+  font-size:20px; font-weight:850; letter-spacing:-.025em; line-height:1.2;
+  margin-bottom:15px;
+}
+.feedback .result.ok { color:var(--bull); }
+.feedback .result.bad{ color:var(--bear); }
+.feedback .line{
+  font-size:15px; line-height:1.55; margin-bottom:11px;
+  color:var(--text-hi);
+}
+.feedback .line b{ color:#FFFFFF; font-weight:700; }
+.feedback .line:last-of-type{ margin-bottom:19px; }
+
+/* Neutral bright fill: the advance button must not read as a bullish call. */
+.btn--next{
+  background:linear-gradient(180deg,#FFFFFF,#E6EAEF);
+  border-color:rgba(255,255,255,.55);
+  color:#0E1013; font-weight:750;
+  box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.7);
+}
+.btn--next:hover{
+  background:linear-gradient(180deg,#FFFFFF,#F1F4F7);
+  border-color:#FFFFFF;
+  box-shadow:0 10px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.8);
+}
+.btn--next .arw{ font-size:17px; font-weight:800; line-height:1; }
+
+/* Floating verdict markers. They sit over the headline, so each one carries its
+   own backdrop instead of relying on the text underneath being out of the way. */
+.coinpop,.misspop{
+  position:absolute; left:50%; top:50%; z-index:5;
+  transform:translate(-50%,-50%);
+  display:flex; align-items:center; gap:6px;
+  padding:9px 18px; border-radius:999px;
+  font-weight:900; letter-spacing:-.02em; white-space:nowrap;
+  pointer-events:none;
+  background:rgba(10,11,13,.88);
+  backdrop-filter:blur(8px) saturate(140%);
+  -webkit-backdrop-filter:blur(8px) saturate(140%);
+}
+.coinpop{
+  font-size:21px; color:var(--gold);
+  border:1px solid rgba(251,188,4,.42);
+  box-shadow:0 10px 34px rgba(0,0,0,.5), 0 0 26px rgba(251,188,4,.22);
+  animation:popFloat 1s var(--ease-out) forwards;
+}
+.misspop{
+  font-size:26px; color:var(--bear);
+  border:1px solid rgba(246,70,93,.5);
+  box-shadow:0 10px 34px rgba(0,0,0,.5), 0 0 30px rgba(246,70,93,.28);
+  animation:popFloat 1.05s var(--ease-out) forwards;
+}
+@keyframes popFloat{
+  0%  { opacity:0; transform:translate(-50%,-34%) scale(.78); }
+  20% { opacity:1; transform:translate(-50%,-52%) scale(1.1); }
+  34% { transform:translate(-50%,-50%) scale(1); }
+  70% { opacity:1; transform:translate(-50%,-66%) scale(1); }
+  100%{ opacity:0; transform:translate(-50%,-92%) scale(.94); }
+}
+
+/* -------------------------------------------------------- mode briefing */
+.intro{ padding:30px 22px 26px; text-align:center; }
+.intro .em{ font-size:46px; line-height:1; display:block; margin-bottom:10px; animation:pop .5s var(--snap) both; }
+.intro h2{ font-size:clamp(25px,7.4vw,30px); font-weight:850; letter-spacing:-.035em; line-height:1.1; }
+.intro .sub{ font-size:14.5px; color:var(--text-2); margin-top:9px; line-height:1.5; text-wrap:pretty; }
+
+.ticks{ display:grid; gap:15px; margin:22px 0; text-align:left; }
+.ticks li{
+  display:flex; gap:11px; align-items:center;
+  font-size:15.5px; font-weight:500; line-height:1.4; color:var(--text-hi);
+}
+.ticks li::before{
+  content:'\2713'; flex:0 0 20px; height:20px;
+  display:grid; place-items:center; border-radius:50%;
+  background:var(--brand-soft); border:1px solid var(--brand-line);
+  color:var(--brand-hi); font-size:11px; font-weight:800;
+}
+
+/* --------------------------------------------------------- end screens */
+.end{ text-align:center; padding:30px 22px 26px; }
+.end .em{ font-size:52px; line-height:1; margin-bottom:12px; display:block; animation:pop .55s var(--snap) both; }
+@keyframes pop{ from{ transform:scale(.5); opacity:0 } to{ transform:scale(1); opacity:1 } }
+.end h2{ font-size:clamp(27px,8vw,34px); font-weight:850; letter-spacing:-.035em; line-height:1.1; }
+.end .sub{ font-size:14.5px; color:var(--text-2); margin-top:8px; line-height:1.5; }
+
+.bigscore{
+  margin:22px 0 6px; font-size:60px; font-weight:900; letter-spacing:-.05em; line-height:1;
+  background:linear-gradient(115deg, var(--brand-hi), var(--brand-2) 60%, #7FEFD0);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.bigscore small{ font-size:26px; font-weight:800; color:var(--text-3); -webkit-text-fill-color:var(--text-3); letter-spacing:-.03em; }
+
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:20px 0; }
+.kpi{
+  padding:14px 12px; border-radius:var(--r-sm);
+  background:var(--surface); border:1px solid var(--line); text-align:center;
+}
+.kpi .l{ font-size:10px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--text-3); }
+.kpi .v{ font-size:24px; font-weight:850; letter-spacing:-.03em; margin-top:3px; }
+.kpi--gold .v{ color:var(--gold); }
+.kpi--fire .v{ color:#FF8A3D; }
+
+.accuracy{
+  margin:2px 0 18px; padding:14px 16px; border-radius:var(--r-sm);
+  background:var(--surface); border:1px solid var(--line);
+}
+.accuracy .row{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-3); margin-bottom:8px; font-weight:600; }
+.accuracy .row b{ color:var(--text); font-weight:750; }
+.accuracy .bar{ height:7px; border-radius:99px; background:var(--surface-3); overflow:hidden; }
+.accuracy .bar i{
+  display:block; height:100%; border-radius:99px; width:0;
+  background:linear-gradient(90deg, var(--brand), var(--brand-hi));
+  transition:width .9s var(--ease-out) .15s;
+}
+
+.submit-lbl{
+  font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-3); margin:6px 0 9px; text-align:left;
+}
+.namebox{ display:flex; gap:8px; margin:0 0 20px; }
+.namebox input{
+  flex:1; min-width:0; height:52px; padding:0 16px;
+  border-radius:var(--r-md); border:1px solid var(--line-2);
+  background:var(--surface); color:var(--text);
+  font-size:16px; font-weight:600; letter-spacing:-.01em;
+  transition:border-color .2s, background .2s, box-shadow .2s;
+}
+.namebox input::placeholder{ color:var(--text-3); font-weight:500; }
+.namebox input:focus{
+  outline:none; border-color:var(--brand-line); background:var(--surface-2);
+  box-shadow:0 0 0 3px rgba(7,216,162,.12);
+}
+.namebox .btn{ width:auto; flex:0 0 auto; padding:0 22px; }
+
+.saved-note{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:14px; border-radius:var(--r-md);
+  background:var(--brand-soft); border:1px solid var(--brand-line);
+  color:var(--brand-hi); font-size:14px; font-weight:650; margin-bottom:12px;
+  animation:revealIn .35s var(--ease-out) both;
+}
+
+.stack{ display:grid; gap:10px; }
+
+/* --------------------------------------------------------- leaderboard */
+.lbhead{ text-align:center; margin-bottom:var(--s5); }
+.lbhead h2{ font-size:30px; font-weight:850; letter-spacing:-.035em; }
+.lbhead p{ font-size:14px; color:var(--text-3); margin-top:5px; }
+
+.lblist{ display:grid; gap:8px; margin-bottom:16px; }
+.lbrow{
+  display:flex; align-items:center; gap:12px;
+  padding:13px 15px; border-radius:var(--r-md);
+  background:var(--surface); border:1px solid var(--line);
+  animation:revealIn .35s var(--ease-out) both;
+  transition:border-color .2s, background .2s;
+}
+.lbrow .rank{
+  flex:0 0 30px; height:30px; border-radius:9px; display:grid; place-items:center;
+  font-size:13px; font-weight:800; color:var(--text-2);
+  background:var(--surface-2); border:1px solid var(--line);
+}
+.lbrow.r1 .rank{ background:linear-gradient(145deg,#FFD873,#E5A400); color:#3A2A00; border-color:transparent; }
+.lbrow.r2 .rank{ background:linear-gradient(145deg,#E4E9F0,#9AA4B2); color:#20242A; border-color:transparent; }
+.lbrow.r3 .rank{ background:linear-gradient(145deg,#E0A579,#B06E38); color:#2B1608; border-color:transparent; }
+.lbrow .who{ flex:1; min-width:0; }
+.lbrow .nm{
+  font-size:15px; font-weight:700; letter-spacing:-.015em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.lbrow .meta{ font-size:11.5px; color:var(--text-3); margin-top:2px; display:flex; gap:9px; flex-wrap:wrap; }
+.lbrow .coins{
+  flex:0 0 auto; text-align:right; font-size:17px; font-weight:850;
+  color:var(--gold); letter-spacing:-.02em;
+}
+.lbrow .coins small{ display:block; font-size:10px; font-weight:700; letter-spacing:.1em; color:var(--text-3); text-transform:uppercase; }
+.lbrow.you{
+  border-color:var(--brand-line);
+  background:linear-gradient(135deg, rgba(34,161,128,.16), rgba(26,28,32,.7));
+  box-shadow:0 0 0 1px rgba(7,216,162,.18), 0 10px 30px rgba(34,161,128,.12);
+}
+.lbrow.you .nm::after{
+  content:'YOU'; margin-left:8px; font-size:9.5px; font-weight:800; letter-spacing:.1em;
+  padding:2px 6px; border-radius:5px; vertical-align:middle;
+  background:var(--brand-hi); color:#06120E;
+}
+.empty{ text-align:center; padding:44px 20px; color:var(--text-3); }
+.empty .em{ font-size:40px; display:block; margin-bottom:12px; opacity:.6; }
+.empty p{ font-size:14.5px; line-height:1.5; }
+
+/* ------------------------------------------------------------------ modal */
+.modal{
+  position:fixed; inset:0; z-index:100;
+  display:grid; place-items:center;
+  padding:max(20px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
+}
+.modal[hidden]{ display:none !important; }
+.scrim{
+  position:absolute; inset:0;
+  background:rgba(6,7,9,.74);
+  backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px);
+  animation:fadeIn .25s var(--ease) both;
+}
+@keyframes fadeIn{ from{ opacity:0 } to{ opacity:1 } }
+.modal-card{
+  position:relative; width:100%; max-width:400px;
+  padding:28px 22px 22px; text-align:center;
+  box-shadow:var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.06);
+  animation:modalIn .38s var(--ease-out) both;
+  max-height:calc(100dvh - 40px); overflow-y:auto;
+}
+@keyframes modalIn{
+  from{ opacity:0; transform:translateY(20px) scale(.95) }
+  to  { opacity:1; transform:none }
+}
+.modal .em{ font-size:44px; line-height:1; display:block; margin-bottom:10px; animation:pop .5s var(--snap) both; }
+.modal h2{ font-size:clamp(21px,6vw,24px); font-weight:850; letter-spacing:-.03em; line-height:1.2; }
+.modal .sub{ margin-top:11px; font-size:15px; font-weight:500; line-height:1.5; color:var(--text-hi); text-wrap:pretty; }
+.modal .stack{ margin-top:22px; }
+.modal .hint{ margin-top:12px; font-size:12.5px; color:var(--text-3); }
+.modal .hint:empty{ display:none; }
+
+.btn--gold{
+  background:linear-gradient(180deg,#FFD25A,#E3A200);
+  border-color:rgba(251,188,4,.55); color:#3A2600; font-weight:750;
+  box-shadow:0 8px 24px rgba(251,188,4,.26), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.btn--gold:hover{ background:linear-gradient(180deg,#FFDA75,#EFAE0B); border-color:rgba(251,188,4,.75); }
+.btn--pro{
+  background:linear-gradient(135deg, rgba(34,161,128,.24), rgba(7,216,162,.08));
+  border-color:var(--brand-line); color:var(--brand-hi); font-weight:750;
+}
+.btn--pro:hover{ background:linear-gradient(135deg, rgba(34,161,128,.34), rgba(7,216,162,.12)); border-color:rgba(7,216,162,.6); }
+
+.pro-tag{
+  display:inline-flex; align-items:center; gap:5px; margin-bottom:12px;
+  padding:5px 11px; border-radius:999px;
+  background:var(--brand-soft); border:1px solid var(--brand-line); color:var(--brand-hi);
+  font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+}
+
+.toast{
+  position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 24px);
+  transform:translateX(-50%) translateY(20px); z-index:50;
+  padding:12px 20px; border-radius:999px;
+  background:var(--surface-2); border:1px solid var(--line-2);
+  box-shadow:var(--shadow-3); font-size:13.5px; font-weight:650;
+  opacity:0; pointer-events:none; transition:opacity .25s var(--ease), transform .25s var(--ease);
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ------------------------------------------------------------ responsive */
+@media (max-width:380px){
+  .stat .v{ font-size:17px; }
+  .ans{ padding:17px 8px; }
+  .ans .glyph{ width:26px; height:26px; }
+  .qcard{ padding:30px 18px; min-height:168px; }
+}
+@media (min-width:600px){
+  .app{ padding-top:36px; padding-bottom:36px; }
+  .qcard{ padding:44px 30px; }
+}
+@media (hover:none){
+  .mode-btn:hover{ transform:none; background:var(--surface); }
+  .ans--bull:hover .glyph,.ans--bear:hover .glyph{ transform:none; }
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<main class="frame">
+
+  <!-- ================================================== VIEW: MENU ==== -->
+  <section id="view-menu" class="view is-active" aria-labelledby="menu-title">
+    <div class="brandbar">
+      <div class="wordmark"><span class="mk">P</span><b>Profit</b>&nbsp;Mini Games</div>
+      <div class="bar-right">
+        <button class="chip chip--coins" id="btn-wallet" title="Open Toolshop">🪙 <span id="wallet-coins">0</span></button>
+        <button class="iconbtn" id="btn-sound" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+      </div>
+    </div>
+
+    <div class="hero">
+      <h1 id="menu-title">News <span class="accent">Blitz</span></h1>
+      <p class="tag">React Fast or Miss the Move!</p>
+    </div>
+
+    <div class="card welcome">
+      <p>Test your market intuition by reacting to breaking financial news.
+         Is it Bullish 📈 or Bearish 📉? The faster you respond, the higher your score!</p>
+    </div>
+
+    <div class="card howto">
+      <h3><span class="i">i</span>How to Play</h3>
+      <ul>
+        <li><span class="ic">📰</span><span>You&rsquo;ll see a breaking news headline</span></li>
+        <li><span class="ic">⚡</span><span>Tap &ldquo;Bullish&rdquo; 📈 or &ldquo;Bearish&rdquo; 📉 within the time limit</span></li>
+        <li><span class="ic">❤️</span><span>Correct answers earn points, wrong answers cost lives</span></li>
+        <li><span class="ic">⏱️</span><span>In Survival Mode, the clock gets faster as you progress!</span></li>
+      </ul>
+    </div>
+
+    <div class="card missions">
+      <h3>Daily Missions</h3>
+      <ul id="mission-list"></ul>
+    </div>
+
+    <h3 class="section-title">Choose Your Mode</h3>
+
+    <div class="menu-actions">
+      <button class="mode-btn" data-go="practice">
+        <span class="ic">🎓</span>
+        <span class="txt">
+          <span class="t">Start Practice</span>
+          <span class="d">10 questions with no time pressure. Learn the ropes!</span>
+        </span>
+        <span class="arw">→</span>
+      </button>
+
+      <button class="mode-btn mode-btn--hero" data-go="survival">
+        <span class="ic">🔥</span>
+        <span class="txt">
+          <span class="t">Play Survival Mode</span>
+          <span class="d">Real challenge! Time decreases with each correct answer. Limited lives!</span>
+        </span>
+        <span class="arw">→</span>
+      </button>
+
+      <button class="mode-btn" data-go="leaderboard">
+        <span class="ic">🏆</span>
+        <span class="txt">
+          <span class="t">View Leaderboard</span>
+          <span class="d">See how you rank against the top traders on this device.</span>
+        </span>
+        <span class="arw">→</span>
+      </button>
+    </div>
+
+    <div class="menu-foot" id="menu-foot"></div>
+  </section>
+
+  <!-- ========================================== VIEW: PRACTICE INTRO == -->
+  <section id="view-practice-intro" class="view" aria-labelledby="pi-title">
+    <div class="topbar">
+      <button class="iconbtn" data-go="menu" aria-label="Back to menu">&larr;</button>
+      <div class="title">Practice Mode</div>
+      <div class="iconbtn" style="visibility:hidden" aria-hidden="true">&larr;</div>
+    </div>
+
+    <div class="card intro">
+      <span class="em">&#127891;</span>
+      <h2 id="pi-title">Practice Mode</h2>
+      <p class="sub">Learn how financial news affects the market without any pressure!</p>
+
+      <ul class="ticks">
+        <li>10 questions with detailed explanations</li>
+        <li>Always 5 seconds per question</li>
+        <li>No lives lost, perfect for learning</li>
+        <li>See an explanation after every answer</li>
+      </ul>
+
+      <div class="stack">
+        <button class="btn btn--primary" data-go="practice-start">&#9654;&nbsp; Start Practice</button>
+        <button class="btn btn--ghost" data-go="menu">Back to Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== VIEW: SURVIVAL INTRO == -->
+  <section id="view-survival-intro" class="view" aria-labelledby="si-title">
+    <div class="topbar">
+      <button class="iconbtn" data-go="menu" aria-label="Back to menu">&larr;</button>
+      <div class="title">Survival Mode</div>
+      <div class="iconbtn" style="visibility:hidden" aria-hidden="true">&larr;</div>
+    </div>
+
+    <div class="card intro">
+      <span class="em">&#128293;</span>
+      <h2 id="si-title">Survival Mode</h2>
+      <p class="sub">In Survival Mode, time speeds up, and you only have 3 lives. Can you survive?</p>
+
+      <ul class="ticks">
+        <li>You start with 2 lives</li>
+        <li>Each mistake costs 1 life</li>
+        <li>Time per question decreases as you progress, down to 1.0s</li>
+        <li>Every 10 correct answers in a row = +1 life (max 3)</li>
+        <li>+10 Coins every 5 correct in a row</li>
+        <li>+50 Coins for a 20 streak, +50 for every 60s survived</li>
+      </ul>
+
+      <div class="stack">
+        <button class="btn btn--primary" data-go="survival-start">Play Survival Mode Now &#128640;</button>
+        <button class="btn btn--gold" data-go="toolshop">&#128722;&nbsp; Get Extra Lives in Toolshop</button>
+        <button class="btn btn--ghost" data-go="menu">Back to Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== VIEW: GAME ==== -->
+  <section id="view-game" class="view" aria-labelledby="game-title">
+    <div class="topbar">
+      <button class="iconbtn" data-go="menu" aria-label="Back to menu">←</button>
+      <div class="title" id="game-title">Survival</div>
+      <div class="iconbtn" style="visibility:hidden" aria-hidden="true">←</div>
+    </div>
+
+    <div class="hud" id="hud"></div>
+
+    <div class="timerwrap" id="timerwrap">
+      <div class="timerhead">
+        <span class="lbl">Time to react</span>
+        <span class="val num" id="timer-val">5.0s</span>
+      </div>
+      <div class="track"><div class="fill" id="timer-fill"></div></div>
+    </div>
+
+    <article class="card qcard" id="qcard">
+      <div class="flash"></div>
+      <h2 class="headline" id="q-headline">&nbsp;</h2>
+    </article>
+
+    <div class="answers">
+      <button class="ans ans--bull" id="btn-bull" data-answer="bull">
+        <span class="glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2.5 17.5 9 11 13 15 21.5 6.5" />
+            <polyline points="15.5 6.5 21.5 6.5 21.5 12.5" />
+          </svg>
+        </span>
+        <span class="t">Bullish</span>
+      </button>
+      <button class="ans ans--bear" id="btn-bear" data-answer="bear">
+        <span class="glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2.5 6.5 9 13 13 9 21.5 17.5" />
+            <polyline points="15.5 17.5 21.5 17.5 21.5 11.5" />
+          </svg>
+        </span>
+        <span class="t">Bearish</span>
+      </button>
+    </div>
+
+    <div class="reveal" id="reveal" hidden>
+      <div class="card feedback">
+        <div class="result" id="fb-result"></div>
+        <p class="line"><b>Answer:</b> <span id="fb-answer"></span></p>
+        <p class="line"><b>Explanation:</b> <span id="fb-explain"></span></p>
+        <p class="line"><b>Your reaction time:</b> <span class="num" id="fb-rt"></span></p>
+        <button class="btn btn--next" id="btn-next">
+          <span class="arw" aria-hidden="true">&rarr;</span><span id="next-label">Next Question</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ VIEW: PRACTICE END == -->
+  <section id="view-practice-end" class="view" aria-labelledby="pe-title">
+    <div class="card end">
+      <span class="em" id="pe-emoji">🎯</span>
+      <h2 id="pe-title">Session Complete</h2>
+      <p class="sub" id="pe-sub">Nice work.</p>
+
+      <div class="bigscore num"><span id="pe-score">0</span><small>/10</small></div>
+      <p class="sub" style="margin-top:-2px">Correct calls</p>
+
+      <div class="grid2" style="grid-template-columns:1fr">
+        <div class="kpi"><div class="l">Avg Reaction Time</div><div class="v num" id="pe-rt">0.00s</div></div>
+      </div>
+
+      <div class="stack">
+        <button class="btn btn--primary" data-go="survival">Play Survival Mode Now 🚀</button>
+        <button class="btn btn--gold" data-go="toolshop">🛒&nbsp; Visit Toolshop for Lives</button>
+        <button class="btn" data-go="practice-start">Practice Again</button>
+        <button class="btn btn--ghost" data-go="menu">Back to Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ VIEW: SURVIVAL END == -->
+  <section id="view-survival-end" class="view" aria-labelledby="se-title">
+    <div class="card end">
+      <span class="em">💀</span>
+      <h2 id="se-title">Game Over</h2>
+      <p class="sub" id="se-sub">The tape got you.</p>
+
+      <div class="bigscore num" id="se-coins">0</div>
+      <p class="sub" style="margin-top:-2px">Profit Coins earned</p>
+
+      <div class="grid2">
+        <div class="kpi kpi--fire"><div class="l">Best Run</div><div class="v num" id="se-streak">0</div></div>
+        <div class="kpi"><div class="l">Avg Reaction</div><div class="v num" id="se-rt">0.00s</div></div>
+        <div class="kpi"><div class="l">Correct Calls</div><div class="v num" id="se-correct">0</div></div>
+        <div class="kpi"><div class="l">Accuracy</div><div class="v num" id="se-acc">0%</div></div>
+      </div>
+
+      <div id="se-submit">
+        <div class="submit-lbl">Submit your score to the leaderboard</div>
+        <div class="namebox">
+          <input id="se-name" type="text" maxlength="16" placeholder="Your name" autocomplete="off"
+                 spellcheck="false" aria-label="Your name for the leaderboard" />
+          <button class="btn btn--primary" id="btn-submit-score">Submit</button>
+        </div>
+      </div>
+      <div id="se-saved" hidden></div>
+
+      <div class="stack">
+        <button class="btn btn--primary" data-go="survival-start">Play Again</button>
+        <button class="btn" data-go="leaderboard">🏆&nbsp; View Leaderboard</button>
+        <button class="btn btn--ghost" data-go="menu">Back to Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== VIEW: TOOLSHOP ==== -->
+  <section id="view-toolshop" class="view" aria-labelledby="ts-title">
+    <div class="topbar">
+      <button class="iconbtn" data-go="menu" aria-label="Back to menu">&larr;</button>
+      <div class="title">Toolshop</div>
+      <div class="iconbtn" style="visibility:hidden" aria-hidden="true">&larr;</div>
+    </div>
+
+    <div class="lbhead">
+      <h2 id="ts-title">🛠️ Toolshop</h2>
+      <p>Spend Profit Coins on extra lives.</p>
+    </div>
+
+    <div class="card balance">
+      <span class="l">Your balance</span>
+      <span class="v num" id="ts-balance">0</span>
+    </div>
+
+    <div class="packs" id="ts-packs"></div>
+
+    <button class="btn btn--gold" id="btn-ad" style="margin-top:12px">📺&nbsp; Watch Ad &middot; +30 Coins</button>
+    <p class="ts-note">Rewarded video is a placeholder in this build. No ad network is connected.</p>
+
+    <div class="stack" style="margin-top:16px">
+      <button class="btn btn--primary" data-go="survival">🔥&nbsp; Play Survival Mode</button>
+      <button class="btn btn--ghost" data-go="menu">Back to Menu</button>
+    </div>
+  </section>
+
+  <!-- =========================================== VIEW: LEADERBOARD ==== -->
+  <section id="view-leaderboard" class="view" aria-labelledby="lb-title">
+    <div class="topbar">
+      <button class="iconbtn" data-go="menu" aria-label="Back to menu">←</button>
+      <div class="title">Leaderboard</div>
+      <button class="iconbtn" id="btn-clear-lb" title="Clear leaderboard" aria-label="Clear leaderboard">🗑</button>
+    </div>
+
+    <div class="lbhead">
+      <h2 id="lb-title">🏆 Top Traders</h2>
+      <p>Ranked by streak, then reaction time, then lives used.</p>
+    </div>
+
+    <div class="lbtable" id="lb-list"></div>
+
+    <div class="stack">
+      <button class="btn btn--primary" data-go="survival">🔥&nbsp; Play Survival</button>
+      <button class="btn btn--ghost" data-go="menu">Back to Menu</button>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="scrim" id="modal-scrim"></div>
+  <div class="card modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <span class="em" id="modal-em">🔥</span>
+    <h2 id="modal-title"></h2>
+    <p class="sub" id="modal-sub"></p>
+    <div class="stack" id="modal-actions"></div>
+    <p class="hint" id="modal-hint"></p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function () {
+  "use strict";
+
+  /* ==========================================================================
+     1. DATASET
+     --------------------------------------------------------------------------
+     c = category chip, s = ticker/instrument shown on the card,
+     h = headline, b = 1 when the market read is bullish, 0 when bearish,
+     e = the teaching note revealed after the call.
+     ====================================================================== */
+  var NEWS = [
+    /* ---------- macro: rates, inflation, jobs, growth ---------- */
+    {c:"MACRO",s:"SPX",b:1,h:"Fed signals three rate cuts next year as inflation cools faster than forecast",
+     e:"Lower policy rates cut borrowing costs and raise the present value of future earnings. Dovish guidance is the single most reliable tailwind for broad equities."},
+    {c:"INFLATION",s:"SPX",b:0,h:"Core CPI comes in hot at 4.1%, well above the 3.5% consensus",
+     e:"A hot inflation print forces the Fed to stay restrictive for longer. Higher-for-longer rates lift discount rates and compress valuation multiples across the market."},
+    {c:"JOBS",s:"SPX",b:1,h:"Economy adds 310K jobs while wage growth stays contained at 3.2%",
+     e:"Strong hiring without a wage spike is the goldilocks mix: demand holds up but the inflation impulse stays capped, so the Fed has no reason to tighten."},
+    {c:"RATES",s:"US10Y",b:0,h:"10-year Treasury yield spikes to 5.2% after a failed bond auction",
+     e:"A weak auction pushes up the risk-free rate. Bonds become a tougher competitor for capital and every long-duration asset gets repriced lower."},
+    {c:"CENTRAL BANK",s:"DAX",b:1,h:"ECB delivers a surprise 50bp cut and opens a new bank liquidity facility",
+     e:"An unexpected cut plus fresh liquidity eases financial conditions immediately. Surprise easing is bullish precisely because it was not in the price."},
+    {c:"CONSUMER",s:"XRT",b:0,h:"Retail sales unexpectedly fall 1.4% as credit card delinquencies climb",
+     e:"Consumer spending drives roughly two thirds of the economy. Falling sales alongside rising delinquencies points to a demand rollover, not a soft patch."},
+    {c:"JOBS",s:"SPX",b:0,h:"Weekly jobless claims jump to a two-year high as layoff notices accelerate",
+     e:"Rising claims are a leading indicator of recession. Job losses cut household income, which cuts spending, which cuts corporate revenue."},
+    {c:"CENTRAL BANK",s:"SPX",b:1,h:"Fed holds rates steady and says policy is now sufficiently restrictive",
+     e:"Confirming the end of a hiking cycle removes the biggest overhang on equities. Markets rally on the removal of uncertainty as much as on the rate path itself."},
+    {c:"MACRO",s:"IWM",b:1,h:"Manufacturing PMI returns to expansion at 52.4 after 14 months of contraction",
+     e:"A PMI above 50 signals expansion. Manufacturing turns before the broader cycle, so a clean break higher usually front-runs an earnings recovery."},
+    {c:"MACRO",s:"SPX",b:0,h:"GDP contracts 0.6% in the second quarter, the second straight decline",
+     e:"Two consecutive quarters of contraction is the textbook recession marker. Shrinking output means shrinking corporate profits."},
+    {c:"HOUSING",s:"XHB",b:1,h:"Housing starts jump 14% as 30-year mortgage rates slip below 6%",
+     e:"Cheaper mortgages revive housing demand, and construction pulls through lumber, appliances, furnishings and lending. Housing is a powerful cycle amplifier."},
+
+    /* ---------- earnings and guidance ---------- */
+    {c:"EARNINGS",s:"NVDA",b:1,h:"Chipmaker beats on revenue and earnings, then raises full-year guidance 12%",
+     e:"A beat tells you about the last quarter. Raised guidance tells you about the next four, and forward estimates are what analysts actually value the stock on."},
+    {c:"EARNINGS",s:"TGT",b:0,h:"Retailer misses revenue estimates and slashes its full-year outlook",
+     e:"A miss paired with a guidance cut forces analysts to lower estimates twice over. Cut numbers plus a cut multiple is the classic double hit."},
+    {c:"GUIDANCE",s:"CRM",b:0,h:"Software firm beats on earnings but flags elongated sales cycles into next quarter",
+     e:"Markets trade the forward look, not the printed quarter. Elongated sales cycles is management code for deals slipping, so the beat gets ignored."},
+    {c:"EARNINGS",s:"JPM",b:1,h:"Bank posts record net interest income and releases loan-loss reserves",
+     e:"Record net interest income shows the lending spread is working, and a reserve release signals management sees credit quality improving rather than deteriorating."},
+    {c:"MARGINS",s:"F",b:0,h:"Automaker warns of margin compression as the EV price war intensifies",
+     e:"Price wars trade margin for volume. Even with flat revenue, compressed margins mean materially lower earnings per share."},
+    {c:"EARNINGS",s:"MSFT",b:1,h:"Cloud provider reports 41% backlog growth and a record operating margin",
+     e:"Backlog is contracted future revenue, so it de-risks the forward model. Growing that backlog while expanding margin is the strongest combination in software."},
+    {c:"GUIDANCE",s:"DAL",b:0,h:"Airline cuts capacity guidance, citing softening domestic bookings",
+     e:"Airlines have huge fixed costs, so revenue softness hits profit hard. Cutting capacity is an admission that demand has already turned."},
+    {c:"EARNINGS",s:"AMD",b:1,h:"Semiconductor giant says AI data-center capacity is sold out through next year",
+     e:"Sold out means demand exceeds supply, which gives the company pricing power and makes the revenue ramp highly visible for several quarters."},
+    {c:"EARNINGS",s:"SBUX",b:0,h:"Coffee chain reports third straight quarter of negative same-store sales",
+     e:"Same-store sales strip out new openings, so they measure true underlying demand. Three negative quarters is a trend, not a stumble."},
+
+    /* ---------- capital returns and balance sheet ---------- */
+    {c:"BUYBACK",s:"AAPL",b:1,h:"Board authorizes a $25B share repurchase, roughly 8% of market cap",
+     e:"Buybacks shrink the share count, which mechanically lifts earnings per share, and they signal management believes the stock is undervalued."},
+    {c:"DIVIDEND",s:"WBA",b:0,h:"Company suspends its dividend to preserve cash amid refinancing risk",
+     e:"A suspension is a distress signal about the balance sheet, and it forces income funds mandated to hold dividend payers to sell."},
+    {c:"DIVIDEND",s:"CAT",b:1,h:"Industrial lifts its quarterly dividend 15%, extending a 30-year growth streak",
+     e:"Dividend increases are a credible confidence signal because cutting one later is punished. Management only raises when free cash flow is durable."},
+    {c:"DILUTION",s:"NEE",b:0,h:"Utility announces a $4B equity raise priced at a 9% discount to fund capex",
+     e:"Issuing new shares below market splits the same earnings across a larger base. Existing holders are diluted and the discount sets a new anchor price."},
+    {c:"COST CUTS",s:"META",b:1,h:"Company announces a 15% workforce reduction and $500M of annual savings",
+     e:"Cost cuts flow almost directly to operating income. Markets typically reward the margin repair, even though the layoffs signal weak top-line growth."},
+    {c:"DEBT",s:"CCL",b:0,h:"Company draws down its full revolving credit line as cash burn accelerates",
+     e:"Fully drawing a revolver is a liquidity alarm. It says the company cannot fund operations internally and may not be able to access debt markets normally."},
+
+    /* ---------- M&A and ownership ---------- */
+    {c:"M&A",s:"TGT",b:1,h:"Private equity consortium offers a 38% premium to take the company private",
+     e:"A cash bid sets a hard floor near the offer price, and the shares gap up toward it. The premium is realised value handed to current holders."},
+    {c:"REGULATORY",s:"ATVI",b:0,h:"Antitrust regulators sue to block the pending $60B merger",
+     e:"The target trades on deal probability. A lawsuit lowers the odds of completion, so the price falls back toward its standalone value."},
+    {c:"M&A",s:"CRM",b:0,h:"Acquirer announces an all-stock takeover that will issue 22% more shares",
+     e:"All-stock deals dilute the buyer and signal management thinks its own shares are richly valued. Acquirers usually fall on announcement."},
+    {c:"ACTIVIST",s:"DIS",b:1,h:"Activist investor discloses a 9.8% stake and pushes to break up the company",
+     e:"Activists force change: asset sales, cost cuts, board seats. The market prices in the chance that hidden sum-of-the-parts value gets unlocked."},
+    {c:"SPINOFF",s:"GE",b:1,h:"Conglomerate will spin off its aerospace division as a separately listed company",
+     e:"Spinoffs unwind the conglomerate discount. Focused businesses attract specialist investors and typically get valued at higher multiples apart than together."},
+
+    /* ---------- ratings, index, analysts ---------- */
+    {c:"DOWNGRADE",s:"BA",b:0,h:"Major broker downgrades the stock to Sell and cuts its price target 40%",
+     e:"A high-profile downgrade shifts consensus and gives institutions cover to reduce positions. Target cuts of this size reset the perceived fair value."},
+    {c:"UPGRADE",s:"UBER",b:1,h:"Two brokers upgrade to Buy, citing an inflection in free cash flow",
+     e:"Free cash flow inflection is the moment a growth story becomes self-funding. Upgrades bring fresh buying and lift consensus estimates."},
+    {c:"CREDIT",s:"XRX",b:0,h:"S&P cuts the credit rating to junk with a negative outlook",
+     e:"A junk rating raises the cost of debt and forces investment-grade-only funds to sell the bonds. Higher interest expense flows straight through to equity value."},
+    {c:"INDEX",s:"SMCI",b:1,h:"Index provider confirms the stock will join the S&P 500 next Friday",
+     e:"Every index fund tracking the benchmark must buy the shares before the effective date. That is forced, price-insensitive demand hitting a fixed float."},
+
+    /* ---------- legal, regulatory, company-specific shocks ---------- */
+    {c:"PHARMA",s:"LLY",b:1,h:"FDA grants accelerated approval for the firm's lead oncology drug",
+     e:"Approval converts years of sunk research spend into a revenue stream with patent protection. It also removes the binary risk that the trial data was rejected."},
+    {c:"ACCOUNTING",s:"WBA",b:0,h:"Company discloses an SEC probe into revenue recognition and delays its annual filing",
+     e:"An accounting investigation undermines every number in the model. A delayed filing compounds it by raising the risk of restatement or covenant breach."},
+    {c:"LEGAL",s:"JNJ",b:1,h:"Appeals court throws out the $2.1B patent verdict against the company",
+     e:"A removed liability is value returned to shareholders. The cash no longer has to be reserved and the legal overhang on the multiple lifts."},
+    {c:"GOVERNANCE",s:"LUMN",b:0,h:"CFO resigns abruptly as the audit committee opens an internal review",
+     e:"An abrupt finance chief exit alongside an internal review is a classic warning sign. Investors mark down for the possibility that the books are wrong."},
+    {c:"CYBER",s:"MGM",b:0,h:"Cyberattack keeps the company's booking systems offline for a fourth day",
+     e:"Extended downtime means lost revenue that is never recovered, plus remediation costs, regulatory fines and lasting customer trust damage."},
+    {c:"INSIDERS",s:"PYPL",b:1,h:"Three directors buy a combined $12M of stock on the open market",
+     e:"Insiders sell for many reasons but buy for only one. Cluster buying with personal money is one of the strongest signals of undervaluation."},
+    {c:"SUPPLY",s:"TSLA",b:0,h:"Lock-up expiry frees 180 million shares for sale starting Monday",
+     e:"A wave of newly sellable shares hits a market that has not had to absorb them. Anticipated supply overhang pressures the price ahead of the date."},
+
+    /* ---------- geopolitics and trade ---------- */
+    {c:"GEOPOLITICS",s:"SPX",b:1,h:"Ceasefire agreed in a key shipping corridor and freight rates plunge",
+     e:"Lower shipping costs cut input costs across every goods supply chain. Removing a war-risk premium also compresses the equity risk premium."},
+    {c:"TRADE",s:"SOXX",b:0,h:"New export controls block advanced chip sales to a major overseas market",
+     e:"Export bans delete addressable revenue outright. There is no pricing or cost lever that recovers a market a company is legally barred from serving."},
+    {c:"ENERGY",s:"SPX",b:0,h:"Sanctions on a top-three oil exporter take effect immediately",
+     e:"Supply disruption pushes crude higher, which raises input and transport costs for most companies and revives inflation just as central banks want it falling."},
+    {c:"TRADE",s:"SPX",b:1,h:"Two governments sign a tariff rollback covering $400B of goods",
+     e:"Tariffs are a tax on trade. Removing them lowers costs for importers, lifts volumes for exporters and reduces the uncertainty that freezes capital spending."},
+
+    /* ---------- crypto ---------- */
+    {c:"CRYPTO",s:"BTC",b:1,h:"Spot Bitcoin ETFs record $1.2B of net inflows in a single session",
+     e:"ETF inflows force the issuer to buy actual coins against a fixed supply schedule. It is direct, measurable demand from regulated capital."},
+    {c:"CRYPTO",s:"BTC",b:0,h:"Top-five exchange halts withdrawals, citing technical issues",
+     e:"Halted withdrawals almost always signal a solvency or custody problem. Contagion fear spreads across the asset class faster than facts can arrive."},
+    {c:"CRYPTO",s:"ETH",b:1,h:"Network upgrade cuts layer-2 transaction fees by roughly 90%",
+     e:"Lower fees expand the set of viable applications, which drives usage, which drives demand for the underlying asset that settles the transactions."},
+    {c:"CRYPTO",s:"SOL",b:0,h:"Regulator calls a major token an unregistered security and exchanges begin delisting",
+     e:"Delisting removes liquidity and forces holders out through the exit at once. Regulatory reclassification also blocks institutional participation."},
+
+    /* ---------- commodities ---------- */
+    {c:"COMMODITIES",s:"WTI",b:1,h:"OPEC+ announces a surprise 2 million barrel per day output cut",
+     e:"For crude itself, a supply cut into steady demand tightens the balance and lifts the price. Note the flip side: it is bearish for airlines and refiners."},
+    {c:"COMMODITIES",s:"HG",b:1,h:"Copper inventories in exchange warehouses fall to a 20-year low",
+     e:"Thin inventory leaves no cushion for any disruption. Buyers must bid up for prompt metal, and copper demand tracks the electrification build-out."},
+    {c:"COMMODITIES",s:"ZW",b:0,h:"Record harvest pushes wheat stockpiles to a five-year high",
+     e:"Abundant supply against stable demand pushes prices down. Grain markets are supply-driven, so a record crop is a straightforward bearish input."},
+    /* ---------- named examples ---------- */
+    {c:"EARNINGS",s:"AAPL",b:1,h:"Apple beats earnings expectations",
+     e:"A beat means the company earned more than analysts modelled, so consensus estimates get revised upward and the stock reprices to the higher numbers."},
+    {c:"COMMODITIES",s:"WTI",b:1,h:"Oil supply cut announced by OPEC",
+     e:"OPEC controls a large share of global output. Cutting supply into steady demand tightens the market and pushes crude prices up."},
+    {c:"INFLATION",s:"SPX",b:0,h:"US inflation hits 10-year high",
+     e:"Peak inflation forces the central bank to raise rates aggressively. Higher rates lift discount rates, squeeze margins and compress equity valuations."},
+    {c:"RECALL",s:"TSLA",b:0,h:"Tesla recalls 100,000 vehicles",
+     e:"A recall means direct repair costs, lost production and reputational damage, and it raises the risk that regulators look harder at the rest of the line-up."},
+
+    {c:"COMMODITIES",s:"XAU",b:1,h:"Gold breaks to a record high as real yields turn negative",
+     e:"Gold pays no income, so its main cost is the yield given up by holding it. When real yields go negative that cost disappears and gold gets bid."}
+  ];
+
+  /* ==========================================================================
+     2. TUNING CONSTANTS
+     ====================================================================== */
+  var CFG = {
+    practiceCount:   10,
+    practiceTime:    5000,   // ms per question in practice
+
+    survStart:       5000,   // survival opening clock
+    survFloor:       1000,   // hard floor the clock ramps down to
+    survStep:        160,    // ms shaved per question answered
+
+    livesStart:      2,      // free tier
+    livesMax:        5,      // display cap: bought packs can exceed the streak cap
+    streakLifeCap:   3,      // the streak bonus never pushes past this
+    streakPerLife:   10,     // 10 correct in a row = +1 life
+
+    coinsPerFive:    10,     // +10 coins every 5 correct in a row
+    streakBonusAt:   20,     // +50 coins each time the run hits a 20 streak
+    coinsPerStreakBonus: 50,
+    surviveMs:       60000,  // +50 coins for every 60s survived
+    coinsPerMinute:  50,
+    adReward:        30,     // coins credited by the (placeholder) rewarded ad
+
+    continueCost:    250,    // Profit Coins to buy back into a run
+    continueLives:   3,      // lives granted by that purchase
+
+    lbMax:           25      // leaderboard rows kept
+  };
+
+  /* Toolshop inventory. Prices are Profit Coins. */
+  var PACKS = [
+    { id: "p3",  label: "3 Lives",                  lives: 3, price: 250 },
+    { id: "p5",  label: "5 Lives",                  lives: 5, price: 400 },
+    { id: "pu",  label: "Unlimited for 1 Hour",     lives: 0, price: 1000, proPlus: true }
+  ];
+
+  /* Plan tiers. There is no account system in this build, so everyone is free;
+     the multipliers and starting lives are data so a real tier can drop in. */
+  var TIERS = {
+    free:    { name: "Free",  lives: 2, coinMult: 1   },
+    pro:     { name: "PRO",   lives: 5, coinMult: 1.5 },
+    proplus: { name: "PRO+",  lives: 5, coinMult: 2   }
+  };
+  var PLAN = "free";
+  function tier() { return TIERS[PLAN]; }
+
+  /* Commercial destinations. Drop real URLs in here and the buttons navigate;
+     leave them empty and they explain themselves instead of dead-ending. */
+  var LINKS = {
+    toolshop: "",
+    pro:      ""
+  };
+
+  var KEY = {
+    board:  "newsblitz.leaderboard.v2",
+    wallet: "newsblitz.wallet.v1",
+    stats:  "newsblitz.stats.v1",
+    daily:  "newsblitz.daily.v1",
+    sound:  "newsblitz.sound.v1",
+    name:   "newsblitz.name.v1",
+    last:   "newsblitz.lastentry.v1"
+  };
+
+  /* ==========================================================================
+     3. SMALL UTILITIES
+     ====================================================================== */
+  function $(id) { return document.getElementById(id); }
+  function on(el, ev, fn) { if (el) el.addEventListener(ev, fn); }
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+  function secs(ms) { return (ms / 1000).toFixed(2) + "s"; }
+  function fmt(n) { return Number(n).toLocaleString("en-US"); }
+
+  /* localStorage can throw in private mode — never let it break the game. */
+  function store(key, val) {
+    try {
+      if (val === undefined) {
+        var raw = localStorage.getItem(key);
+        return raw === null ? null : JSON.parse(raw);
+      }
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) { /* storage unavailable: run in-memory only */ }
+    return null;
+  }
+
+  /* ------------------------------------------------------------ wallet ---
+     Coins persist between runs: they are spent in the Toolshop, so they cannot
+     be run-scoped. Lifetime stats and daily missions ride alongside them. */
+  var WALLET = null, STATS = null, DAILY = null;
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+
+  function loadProgress() {
+    WALLET = store(KEY.wallet) || { coins: 0, lives: 0 };
+    STATS  = store(KEY.stats)  || { games: 0, correct: 0, bestStreak: 0, hit100: false };
+    DAILY  = store(KEY.daily);
+    if (!DAILY || DAILY.date !== today()) {
+      DAILY = { date: today(), games: 0, play3: false, pb: false };
+      store(KEY.daily, DAILY);
+    }
+  }
+  function saveWallet() { store(KEY.wallet, WALLET); }
+  function saveStats()  { store(KEY.stats, STATS); }
+  function saveDaily()  { store(KEY.daily, DAILY); }
+
+  function credit(n, why) {
+    WALLET.coins += n;
+    saveWallet();
+    if (why) toast("🪙 +" + n + " Coins · " + why);
+  }
+  function spend(n) {
+    if (WALLET.coins < n) return false;
+    WALLET.coins -= n;
+    saveWallet();
+    return true;
+  }
+
+  /* Fisher-Yates — the only shuffle worth writing. */
+  function shuffle(arr) {
+    var a = arr.slice(), i, j, t;
+    for (i = a.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  var TOAST_T = null;
+  function toast(msg) {
+    var el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(TOAST_T);
+    TOAST_T = setTimeout(function () { el.classList.remove("show"); }, 1900);
+  }
+
+  /* ==========================================================================
+     4. AUDIO — a few synthesised blips, no assets
+     ====================================================================== */
+  var AC = null, soundOn = store(KEY.sound);
+  if (soundOn === null) soundOn = true;
+
+  function tone(freq, dur, type, gain, delay) {
+    if (!soundOn) return;
+    try {
+      if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state === "suspended") AC.resume();
+      var t0 = AC.currentTime + (delay || 0);
+      var osc = AC.createOscillator(), g = AC.createGain();
+      osc.type = type || "sine";
+      osc.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain || 0.07, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g); g.connect(AC.destination);
+      osc.start(t0); osc.stop(t0 + dur + 0.02);
+    } catch (e) { /* audio blocked: silent fallback */ }
+  }
+  var SFX = {
+    correct: function () { tone(660, .10, "sine", .06, 0); tone(990, .16, "sine", .05, .07); },
+    wrong:   function () { tone(190, .18, "sawtooth", .05, 0); tone(120, .26, "sawtooth", .05, .09); },
+    coin:    function () { tone(1320, .07, "triangle", .04, .02); },
+    life:    function () { tone(520, .09, "triangle", .05, 0); tone(780, .09, "triangle", .05, .09); tone(1040, .14, "triangle", .05, .18); },
+    over:    function () { tone(330, .22, "sine", .06, 0); tone(247, .28, "sine", .06, .16); tone(165, .40, "sine", .06, .34); },
+    click:   function () { tone(440, .04, "sine", .03, 0); }
+  };
+
+  /* ==========================================================================
+     5. STATE
+     ====================================================================== */
+  var S = {
+    mode: null,        // "practice" | "survival"
+    view: "menu",
+    deck: [],          // remaining questions this run
+    q: null,           // current question
+    idx: 0,            // questions served
+    answered: 0,
+    correct: 0,
+    rts: [],           // reaction times in ms (answered questions only)
+    lives: 0,
+    streak: 0,
+    bestStreak: 0,
+    coins: 0,
+    livesUsed: 0,     // lives consumed this run, ranks the leaderboard
+    runStart: 0,      // performance.now() when the run began
+    minutes: 0,       // 60s survival bonuses already paid
+    boostShown: false,
+    limit: 0,          // current question time budget (ms)
+    startedAt: 0,      // performance.now() when the headline became visible
+    deadline: 0,
+    raf: 0,
+    locked: true,      // input lock between questions
+    token: 0,          // bumped on every new question, invalidates stale callbacks
+    lastSeen: null     // last headline shown, so a reshuffle never repeats it
+  };
+
+  /* DOM cache */
+  var D = {
+    hud:      $("hud"),
+    timerwrap:$("timerwrap"),
+    timerVal: $("timer-val"),
+    timerFill:$("timer-fill"),
+    qcard:    $("qcard"),
+    qhead:    $("q-headline"),
+    bull:     $("btn-bull"),
+    bear:     $("btn-bear"),
+    reveal:   $("reveal"),
+
+    fbResult: $("fb-result"),
+    fbAnswer: $("fb-answer"),
+    fbExplain:$("fb-explain"),
+    fbRt:     $("fb-rt"),
+    nextBtn:  $("btn-next"),
+    nextLbl:  $("next-label"),
+    gameTitle:$("game-title")
+  };
+  var HUD = {}; // per-mode HUD element refs, rebuilt on run start
+
+  /* ==========================================================================
+     6. VIEW ROUTING
+     ====================================================================== */
+  var VIEWS = {
+    menu: "view-menu",
+    practiceIntro: "view-practice-intro",
+    survivalIntro: "view-survival-intro",
+    game: "view-game",
+    practiceEnd: "view-practice-end",
+    survivalEnd: "view-survival-end",
+    leaderboard: "view-leaderboard"
+  };
+
+  function showView(name) {
+    Object.keys(VIEWS).forEach(function (k) {
+      $(VIEWS[k]).classList.toggle("is-active", k === name);
+    });
+    S.view = name;
+    document.body.classList.toggle("playing", name === "game");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function goto(dest) {
+    stopTimer();
+    if (MODAL.open) closeModal();
+    if (dest === "menu")             { S.mode = null; renderMenuFoot(); showView("menu"); }
+    else if (dest === "practice")    { showView("practiceIntro"); }
+    else if (dest === "practice-start") { startRun("practice"); }
+    else if (dest === "survival")    { showView("survivalIntro"); }
+    else if (dest === "survival-start") { startRun("survival"); }
+    else if (dest === "leaderboard") { renderLeaderboard(); showView("leaderboard"); }
+  }
+
+  /* ==========================================================================
+     7. TIMER — one rAF loop, paused when the tab is hidden
+     ====================================================================== */
+  function startTimer(limit) {
+    S.limit = limit;
+    S.startedAt = performance.now();
+    S.deadline = S.startedAt + limit;
+    D.timerFill.classList.remove("warn");
+    D.timerVal.classList.remove("warn");
+    D.timerFill.style.transform = "scaleX(1)";
+    D.timerVal.textContent = (limit / 1000).toFixed(1) + "s";
+    cancelAnimationFrame(S.raf);
+    S.raf = requestAnimationFrame(tick);
+  }
+
+  function stopTimer() { cancelAnimationFrame(S.raf); S.raf = 0; }
+
+  function tick() {
+    var remain = S.deadline - performance.now();
+    if (remain <= 0) {
+      D.timerFill.style.transform = "scaleX(0)";
+      D.timerVal.textContent = "0.0s";
+      onTimeout();
+      return;
+    }
+    D.timerFill.style.transform = "scaleX(" + (remain / S.limit).toFixed(4) + ")";
+    D.timerVal.textContent = (Math.ceil(remain / 100) / 10).toFixed(1) + "s";
+    var warn = remain < 1500;
+    D.timerFill.classList.toggle("warn", warn);
+    D.timerVal.classList.toggle("warn", warn);
+    S.raf = requestAnimationFrame(tick);
+  }
+
+  /* Tab switching should never cost a life or inflate a reaction time. */
+  var hiddenAt = 0;
+  on(document, "visibilitychange", function () {
+    if (S.view !== "game" || S.locked) return;
+    if (document.hidden) { hiddenAt = performance.now(); stopTimer(); }
+    else if (hiddenAt) {
+      var away = performance.now() - hiddenAt;
+      hiddenAt = 0;
+      S.deadline += away;
+      S.startedAt += away;
+      S.raf = requestAnimationFrame(tick);
+    }
+  });
+
+  /* ==========================================================================
+     8. RUN LIFECYCLE
+     ====================================================================== */
+  function buildHud(mode) {
+    if (mode === "survival") {
+      D.hud.innerHTML =
+        '<div class="stat stat--lives"><span class="l">Lives</span>' +
+          '<span class="v"><span class="hearts" id="hud-hearts"></span></span></div>' +
+        '<div class="stat stat--streak"><span class="l">In a Row</span>' +
+          '<span class="v num" id="hud-streak">0</span></div>' +
+        '<div class="stat stat--coins"><span class="l">Coins</span>' +
+          '<span class="v num" id="hud-coins">0</span></div>';
+      HUD = { hearts: $("hud-hearts"), streak: $("hud-streak"), coins: $("hud-coins") };
+    } else {
+      D.hud.innerHTML =
+        '<div class="stat"><span class="l">Question</span>' +
+          '<span class="v num" id="hud-prog">1/' + CFG.practiceCount + '</span></div>' +
+        '<div class="stat"><span class="l">Correct</span>' +
+          '<span class="v num" id="hud-score">0</span></div>' +
+        '<div class="stat"><span class="l">Avg Reaction</span>' +
+          '<span class="v num" id="hud-avg">—</span></div>';
+      HUD = { prog: $("hud-prog"), score: $("hud-score"), avg: $("hud-avg") };
+    }
+    renderHud();
+  }
+
+  function bump(el) {
+    if (!el) return;
+    el.classList.remove("is-bump");
+    void el.offsetWidth;          // force reflow so the animation replays
+    el.classList.add("is-bump");
+  }
+
+  function renderHud(changed) {
+    if (S.mode === "survival") {
+      var html = "", i, slots = Math.max(tier().lives, S.lives);
+      for (i = 0; i < slots; i++) {
+        html += '<i class="' + (i < S.lives ? "" : "off") + '">' + (i < S.lives ? "❤️" : "🤍") + "</i>";
+      }
+      HUD.hearts.innerHTML = html;
+      HUD.streak.textContent = S.streak;
+      HUD.coins.textContent = fmt(WALLET.coins);
+      if (changed === "streak") bump(HUD.streak);
+      if (changed === "coins") bump(HUD.coins);
+      if (changed === "life") bump(HUD.hearts.children[S.lives - 1]);
+    } else {
+      HUD.prog.textContent = Math.min(S.idx + 1, CFG.practiceCount) + "/" + CFG.practiceCount;
+      HUD.score.textContent = S.correct;
+      HUD.avg.textContent = S.rts.length ? secs(avg(S.rts)) : "—";
+    }
+  }
+
+  function avg(list) {
+    if (!list.length) return 0;
+    var sum = 0, i;
+    for (i = 0; i < list.length; i++) sum += list[i];
+    return sum / list.length;
+  }
+
+  function startRun(mode) {
+    S.mode = mode;
+    S.deck = shuffle(NEWS);
+    S.idx = 0; S.answered = 0; S.correct = 0; S.rts = [];
+    S.streak = 0; S.bestStreak = 0; S.coins = 0;
+    S.livesUsed = 0; S.minutes = 0; S.boostShown = false;
+    S.runStart = performance.now();
+    if (mode === "survival") {
+      S.lives = Math.min(CFG.livesMax, tier().lives + (WALLET.lives || 0));
+      if (WALLET.lives) { WALLET.lives = 0; saveWallet(); }   // banked lives are spent into the run
+    } else {
+      S.lives = 0;
+    }
+    S.lastSeen = null;
+    S.fastest = Infinity;
+    S.token++;
+    S.submitted = false;
+    D.gameTitle.textContent = mode === "survival" ? "Survival Mode" : "Practice Mode";
+    buildHud(mode);
+    showView("game");
+    nextQuestion();
+  }
+
+  /* Time budget for the upcoming question. */
+  function currentLimit() {
+    if (S.mode === "practice") return CFG.practiceTime;
+    return Math.max(CFG.survFloor, CFG.survStart - S.answered * CFG.survStep);
+  }
+
+  function drawQuestion() {
+    if (!S.deck.length) {
+      // Ran through the whole dataset: reshuffle, but never repeat back to back.
+      S.deck = shuffle(NEWS);
+      if (S.deck[S.deck.length - 1] === S.lastSeen) S.deck.unshift(S.deck.pop());
+    }
+    var q = S.deck.pop();
+    S.lastSeen = q;
+    return q;
+  }
+
+  function nextQuestion() {
+    if (S.mode === "practice" && S.idx >= CFG.practiceCount) { endPractice(); return; }
+
+    S.q = drawQuestion();
+    S.locked = true;
+    S.token++;
+
+    // reset card + answer buttons
+    D.qcard.classList.remove("correct", "wrong");
+    var pops = D.qcard.querySelectorAll(".coinpop, .misspop");
+    for (var i = 0; i < pops.length; i++) pops[i].remove();
+    [D.bull, D.bear].forEach(function (b) {
+      b.classList.remove("mark-correct", "mark-wrong", "dim");
+      b.disabled = false;
+    });
+    D.reveal.hidden = true;
+    D.reveal.classList.remove("reveal-in");
+    D.timerwrap.classList.remove("done");
+
+    // paint the headline
+    D.qhead.style.animation = "none";
+    void D.qhead.offsetWidth;
+    D.qhead.style.animation = "";
+    D.qhead.textContent = S.q.h;
+
+    renderHud();
+
+    // start the clock on the frame the headline is actually painted,
+    // so reaction time is measured from render, not from script time.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        S.locked = false;
+        startTimer(currentLimit());
+      });
+    });
+  }
+
+  /* ==========================================================================
+     9. ANSWERING
+     ====================================================================== */
+  function answer(choice) {
+    if (S.locked || S.view !== "game") return;
+    var rt = clamp(performance.now() - S.startedAt, 0, S.limit);
+    S.locked = true;
+    stopTimer();
+    var isCorrect = (choice === "bull") === (S.q.b === 1);
+    S.rts.push(rt);
+    resolve(isCorrect, rt, false);
+  }
+
+  function onTimeout() {
+    if (S.locked) return;
+    S.locked = true;
+    stopTimer();
+    resolve(false, S.limit, true);
+  }
+
+  function resolve(isCorrect, rt, timedOut) {
+    S.answered++;
+    S.idx++;
+    D.timerwrap.classList.add("done");
+
+    var right = S.q.b === 1 ? D.bull : D.bear;
+    var wrong = S.q.b === 1 ? D.bear : D.bull;
+    D.bull.disabled = true; D.bear.disabled = true;
+    right.classList.add("mark-correct");
+    if (timedOut) { wrong.classList.add("dim"); }
+    else if (isCorrect) { wrong.classList.add("dim"); }
+    else { wrong.classList.add("mark-wrong"); }
+
+    D.qcard.classList.add(isCorrect ? "correct" : "wrong");
+
+    var earned = 0;
+    if (isCorrect) {
+      S.correct++;
+      S.streak++;
+      if (!timedOut && rt < S.fastest) S.fastest = rt;
+      if (S.streak > S.bestStreak) S.bestStreak = S.streak;
+      SFX.correct();
+      if (S.mode === "survival") {
+        earned = survivalRewards();
+        renderHud(earned ? "coins" : undefined);
+        bump(HUD.streak);
+        // streak milestone: extra life, capped
+        if (S.streak % CFG.streakPerLife === 0 && S.lives < CFG.streakLifeCap) {
+          S.lives++;
+          renderHud("life");
+          SFX.life();
+          toast("🔥 " + S.streak + " streak — extra life earned!");
+        }
+      }
+    } else {
+      S.streak = 0;
+      SFX.wrong();
+      if (S.mode === "survival") {
+        S.lives--;
+        S.livesUsed++;
+        var lost = HUD.hearts.children[S.lives];
+        if (lost) lost.classList.add("lose");
+        var tokL = S.token;
+        setTimeout(function () { if (S.token === tokL) renderHud(); }, 460);
+        HUD.streak.textContent = 0;
+      }
+    }
+    if (S.mode === "practice") renderHud();
+
+    // ---- what happens next depends on the mode ----
+    if (S.mode === "practice") {
+      showReveal(isCorrect, rt, timedOut, S.idx >= CFG.practiceCount ? "See Results" : "Next Question");
+    } else if (isCorrect) {
+      // keep survival moving: brief confirmation, then straight to the next headline
+      queueAdvance(700, nextQuestion);
+    } else {
+      // a miss never stops the run either: flash the verdict over the card and roll on
+      showMissPop(timedOut);
+      if (S.lives <= 0) { SFX.over(); queueAdvance(1150, offerContinue); }
+      else              { queueAdvance(1150, nextQuestion); }
+    }
+  }
+
+  /* Deferred step that is dropped if the run moved on in the meantime. */
+  function queueAdvance(ms, fn) {
+    var tok = S.token;
+    setTimeout(function () {
+      if (S.view === "game" && S.token === tok) fn();
+    }, ms);
+  }
+
+  function showMissPop(timedOut) {
+    var el = document.createElement("div");
+    el.className = "misspop";
+    el.textContent = timedOut ? "Too slow" : "Wrong";
+    D.qcard.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.remove(); }, 1100);
+  }
+
+  /* Every coin rule in one place: 5 in a row, a 20 streak, and each minute
+     survived. Returns what was paid so the HUD knows whether to animate. */
+  function survivalRewards() {
+    var gross = 0, reasons = [];
+
+    if (S.streak % 5 === 0) { gross += CFG.coinsPerFive; reasons.push("5 in a row"); }
+    if (S.streak % CFG.streakBonusAt === 0) {
+      gross += CFG.coinsPerStreakBonus;
+      reasons.push(CFG.streakBonusAt + " streak");
+    }
+    var mins = Math.floor((performance.now() - S.runStart) / CFG.surviveMs);
+    if (mins > S.minutes) {
+      gross += CFG.coinsPerMinute * (mins - S.minutes);
+      reasons.push("60s survived");
+      S.minutes = mins;
+    }
+    if (!gross) return 0;
+
+    var paid = Math.round(gross * tier().coinMult);
+    S.coins += paid;
+    credit(paid);
+    showCoinPop(paid);
+    SFX.coin();
+
+    // the upsell hook: show a free player what the same haul is worth on PRO+
+    if (PLAN === "free" && !S.boostShown) {
+      S.boostShown = true;
+      toast("💎 You earned " + paid + " Coins – Doubled to " +
+            Math.round(gross * TIERS.proplus.coinMult) + " with PRO+!");
+    }
+    return paid;
+  }
+
+  function showCoinPop(n) {
+    var el = document.createElement("div");
+    el.className = "coinpop";
+    el.textContent = "+" + n + " 🪙";
+    D.qcard.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.remove(); }, 1000);
+  }
+
+  /* One card carries the whole result: outcome, answer, why and reaction time. */
+  function showReveal(isCorrect, rt, timedOut, label) {
+    var call = S.q.b === 1 ? "Bullish 📈" : "Bearish 📉";
+
+    D.fbResult.className = "result " + (isCorrect ? "ok" : "bad");
+    D.fbResult.textContent = isCorrect ? "Correct!" : (timedOut ? "Time's Up!" : "Wrong");
+
+    D.fbAnswer.textContent  = call;
+    D.fbExplain.textContent = S.q.e;
+    D.fbRt.textContent      = timedOut ? "—" : secs(rt);
+
+    D.nextLbl.textContent = label;
+    D.reveal.hidden = false;
+    D.reveal.classList.add("reveal-in");
+    D.nextBtn.focus({ preventScroll: true });
+  }
+
+  function advance() {
+    if (S.view !== "game") return;
+    if (S.mode === "survival" && S.lives <= 0) { endSurvival(); return; }
+    if (S.mode === "practice" && S.idx >= CFG.practiceCount) { endPractice(); return; }
+    nextQuestion();
+  }
+
+  /* ==========================================================================
+     10. END SCREENS
+     ====================================================================== */
+  function endPractice() {
+    stopTimer();
+    var score = S.correct, pct = Math.round((score / CFG.practiceCount) * 100);
+    var tier =
+      score === 10 ? { em: "🏆", t: "Flawless Read", s: "Ten for ten. The tape has no secrets from you." } :
+      score >= 8   ? { em: "🎯", t: "Sharp Instincts", s: "Strong market read. Survival Mode is where it counts." } :
+      score >= 6   ? { em: "📊", t: "Solid Session", s: "Good base. Watch the guidance and dilution headlines." } :
+      score >= 4   ? { em: "📰", t: "Keep Reading", s: "Focus on what a headline does to future earnings." } :
+                     { em: "🌱", t: "Fresh Start", s: "Every explanation is a lesson. Run it back." };
+
+    $("pe-emoji").textContent = tier.em;
+    $("pe-title").textContent = tier.t;
+    $("pe-sub").textContent = tier.s;
+    $("pe-score").textContent = score;
+    $("pe-acc").textContent = pct + "%";
+    $("pe-rt").textContent = S.rts.length ? secs(avg(S.rts)) : "—";
+    $("pe-best").textContent = S.fastest === Infinity ? "—" : secs(S.fastest);
+
+    var bar = $("pe-bar");
+    bar.style.width = "0%";
+    showView("practiceEnd");
+    requestAnimationFrame(function () { bar.style.width = pct + "%"; });
+    setTimeout(function () { if (S.view === "practiceEnd") showProUpsell(); }, 900);
+  }
+
+  function endSurvival() {
+    stopTimer();
+    var pct = S.answered ? Math.round((S.correct / S.answered) * 100) : 0;
+    $("se-coins").textContent = fmt(S.coins);
+    $("se-streak").textContent = S.bestStreak;
+    $("se-rt").textContent = S.rts.length ? secs(avg(S.rts)) : "—";
+    $("se-correct").textContent = S.correct;
+    $("se-acc").textContent = pct + "%";
+    $("se-sub").textContent =
+      S.bestStreak >= 20 ? "Elite tape reading. That streak belongs on the board." :
+      S.bestStreak >= 10 ? "Double-digit streak. The clock finally caught you." :
+      S.bestStreak >= 5  ? "Solid run. Speed is where the coins are." :
+                           "The tape got you. Reaction time is a skill — train it.";
+
+    // reset the submit panel for this run
+    S.submitted = false;
+    $("se-submit").hidden = false;
+    $("se-saved").hidden = true;
+    $("se-saved").innerHTML = "";
+    var input = $("se-name");
+    input.value = store(KEY.name) || "";
+    $("btn-submit-score").disabled = false;
+
+    showView("survivalEnd");
+  }
+
+  /* ==========================================================================
+     11. LEADERBOARD
+     ====================================================================== */
+  function getBoard() {
+    var b = store(KEY.board);
+    return Array.isArray(b) ? b : [];
+  }
+
+  function sortBoard(b) {
+    return b.slice().sort(function (x, y) {
+      return (y.coins - x.coins) || (y.streak - x.streak) || (x.rt - y.rt);
+    });
+  }
+
+  function submitScore() {
+    if (S.submitted) return;
+    var input = $("se-name");
+    var name = (input.value || "").trim().slice(0, 16) || "Anonymous";
+    var entry = {
+      id: "e" + Date.now() + Math.floor(Math.random() * 1000),
+      name: name,
+      coins: S.coins,
+      streak: S.bestStreak,
+      rt: S.rts.length ? Math.round(avg(S.rts)) : 0,
+      correct: S.correct,
+      date: Date.now()
+    };
+    var board = sortBoard(getBoard().concat([entry])).slice(0, CFG.lbMax);
+    store(KEY.board, board);
+    store(KEY.name, name);
+    store(KEY.last, entry.id);
+    S.submitted = true;
+
+    var rank = board.findIndex(function (e) { return e.id === entry.id; }) + 1;
+    $("se-submit").hidden = true;
+    var saved = $("se-saved");
+    saved.hidden = false;
+    saved.innerHTML = '<div class="saved-note">✓ Saved' +
+      (rank > 0 ? " — you are ranked #" + rank : " — keep grinding for a top spot") + "</div>";
+    SFX.life();
+    toast(rank > 0 && rank <= 3 ? "🏆 Top 3 finish!" : "Score submitted");
+  }
+
+  function renderLeaderboard() {
+    var board = sortBoard(getBoard());
+    var lastId = store(KEY.last);
+    var list = $("lb-list");
+
+    if (!board.length) {
+      list.innerHTML =
+        '<div class="card empty"><span class="em">🏆</span>' +
+        "<p>No scores yet.<br />Play Survival Mode and submit a run to claim first place.</p></div>";
+      return;
+    }
+
+    list.innerHTML = board.map(function (e, i) {
+      var mine = e.id === lastId;
+      var when = new Date(e.date);
+      var dateStr = when.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      return '<div class="lbrow r' + (i + 1) + (mine ? " you" : "") + '" style="animation-delay:' + (i * 30) + 'ms">' +
+        '<div class="rank num">' + (i + 1) + "</div>" +
+        '<div class="who">' +
+          '<div class="nm">' + escapeHtml(e.name) + "</div>" +
+          '<div class="meta"><span class="num">🔥 ' + e.streak + " in a row</span>" +
+            '<span class="num">⚡ ' + (e.rt / 1000).toFixed(2) + "s avg</span>" +
+            "<span>" + dateStr + "</span></div>" +
+        "</div>" +
+        '<div class="coins num">' + fmt(e.coins) + "<small>coins</small></div>" +
+      "</div>";
+    }).join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function renderMenuFoot() {
+    var board = sortBoard(getBoard());
+    var foot = $("menu-foot");
+    var bits = [];
+    if (board.length) {
+      bits.push('<span class="chip">🪙 Best ' + fmt(board[0].coins) + " coins</span>");
+      bits.push('<span class="chip">🔥 Best run ' + board[0].streak + "</span>");
+    }
+    bits.push('<span class="chip">⌨️ ← Bullish · → Bearish</span>');
+    foot.innerHTML = bits.join("");
+  }
+
+  /* ==========================================================================
+     11b. MODALS AND COMMERCIAL HOOKS
+     ====================================================================== */
+  var MODAL = { open: false, onDismiss: null };
+
+  function openModal(cfg) {
+    $("modal-em").textContent = cfg.em || "";
+    $("modal-title").textContent = cfg.title || "";
+    $("modal-sub").textContent = cfg.sub || "";
+    $("modal-hint").textContent = cfg.hint || "";
+
+    var box = $("modal-actions");
+    box.innerHTML = "";
+    (cfg.actions || []).forEach(function (a) {
+      var b = document.createElement("button");
+      b.className = "btn " + (a.cls || "");
+      b.textContent = a.label;
+      if (a.disabled) b.disabled = true;
+      else b.addEventListener("click", function () { a.onClick(); });
+      box.appendChild(b);
+    });
+
+    MODAL.open = true;
+    MODAL.onDismiss = cfg.onDismiss || closeModal;
+    $("modal").hidden = false;
+    var first = box.querySelector(".btn:not([disabled])");
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  function closeModal() {
+    MODAL.open = false;
+    MODAL.onDismiss = null;
+    $("modal").hidden = true;
+  }
+
+  /* One place to send every commercial click. Wire LINKS to go live. */
+  function openLink(which, label) {
+    var url = LINKS[which];
+    if (url) { window.open(url, "_blank", "noopener"); return; }
+    toast(label + " is not wired up in this build yet");
+  }
+
+  function showProUpsell() {
+    openModal({
+      em: "🔥",
+      title: "Go PRO",
+      sub: "PRO Users start with 4 lives instead of 2 in Survival Mode! Upgrade now.",
+      actions: [
+        { label: "Upgrade to PRO", cls: "btn--primary",
+          onClick: function () { openLink("pro", "The PRO upgrade"); } },
+        { label: "Maybe later", cls: "btn--ghost", onClick: closeModal }
+      ]
+    });
+  }
+
+  /* Out of lives: offer a way back in before the run is written off. */
+  function offerContinue() {
+    if (S.mode !== "survival") return;
+    var canAfford = WALLET.coins >= CFG.continueCost;
+    openModal({
+      em: "🔥",
+      title: "You were on fire!",
+      sub: "Want to continue?",
+      hint: canAfford
+        ? "You have " + fmt(WALLET.coins) + " Profit Coins"
+        : "You have " + fmt(WALLET.coins) + " of " + fmt(CFG.continueCost) + " coins needed",
+      actions: [
+        { label: "Buy " + CFG.continueLives + " Lives · " + fmt(CFG.continueCost) + " Coins",
+          cls: "btn--gold", disabled: !canAfford, onClick: buyLives },
+        { label: "Upgrade to PRO", cls: "btn--pro",
+          onClick: function () { openLink("pro", "The PRO upgrade"); } },
+        { label: "End Run", cls: "btn--ghost", onClick: function () { closeModal(); endSurvival(); } }
+      ],
+      onDismiss: function () { closeModal(); endSurvival(); }
+    });
+  }
+
+  function buyLives() {
+    if (!spend(CFG.continueCost)) return;
+    S.lives = Math.min(CFG.continueLives, CFG.livesMax);
+    closeModal();
+    renderHud();
+    SFX.life();
+    toast("❤️ Back in the game with " + S.lives + " lives");
+    nextQuestion();
+  }
+
+  /* ==========================================================================
+     12. EVENT WIRING
+     ====================================================================== */
+  document.addEventListener("click", function (ev) {
+    if (!(ev.target instanceof Element)) return;
+    var go = ev.target.closest("[data-go]");
+    if (go) { SFX.click(); goto(go.getAttribute("data-go")); }
+  });
+
+  on(D.bull, "click", function () { answer("bull"); });
+  on(D.bear, "click", function () { answer("bear"); });
+  on(D.nextBtn, "click", advance);
+  on($("btn-submit-score"), "click", submitScore);
+  on($("btn-toolshop"), "click", function () { openLink("toolshop", "The Toolshop"); });
+  on($("modal-scrim"), "click", function () { if (MODAL.onDismiss) MODAL.onDismiss(); });
+
+  on($("se-name"), "keydown", function (ev) {
+    if (ev.key === "Enter") { ev.preventDefault(); submitScore(); }
+  });
+
+  on($("btn-sound"), "click", function () {
+    soundOn = !soundOn;
+    store(KEY.sound, soundOn);
+    $("btn-sound").textContent = soundOn ? "🔊" : "🔇";
+    if (soundOn) SFX.click();
+    toast(soundOn ? "Sound on" : "Sound off");
+  });
+
+  on($("btn-clear-lb"), "click", function () {
+    if (!getBoard().length) { toast("Leaderboard is already empty"); return; }
+    if (window.confirm("Clear all leaderboard scores on this device?")) {
+      store(KEY.board, []);
+      store(KEY.last, null);
+      renderLeaderboard();
+      renderMenuFoot();
+      toast("Leaderboard cleared");
+    }
+  });
+
+  /* press bloom follows the pointer */
+  document.addEventListener("pointerdown", function (ev) {
+    var b = ev.target.closest(".btn, .ans, .mode-btn");
+    if (!b) return;
+    var r = b.getBoundingClientRect();
+    b.style.setProperty("--px", ((ev.clientX - r.left) / r.width * 100) + "%");
+    b.style.setProperty("--py", ((ev.clientY - r.top) / r.height * 100) + "%");
+  }, { passive: true });
+
+  /* keyboard: ←/B bullish, →/N bearish, Enter next, Esc menu */
+  document.addEventListener("keydown", function (ev) {
+    if (ev.target && ev.target.tagName === "INPUT") return;
+    var k = ev.key;
+
+    // a modal owns the keyboard while it is open
+    if (MODAL.open) {
+      if (k === "Escape" && MODAL.onDismiss) { ev.preventDefault(); MODAL.onDismiss(); }
+      return;
+    }
+
+    if (k === "Escape" && S.view !== "menu") { ev.preventDefault(); goto("menu"); return; }
+
+    if (S.view === "game") {
+      if (!S.locked) {
+        if (k === "ArrowLeft" || k === "b" || k === "B") { ev.preventDefault(); answer("bull"); return; }
+        if (k === "ArrowRight" || k === "n" || k === "N") { ev.preventDefault(); answer("bear"); return; }
+      } else if (!D.reveal.hidden && (k === "Enter" || k === " ")) {
+        ev.preventDefault(); advance(); return;
+      }
+    }
+
+    if (S.view === "practiceIntro" && (k === "Enter" || k === " ")) {
+      ev.preventDefault(); goto("practice-start"); return;
+    }
+
+    if (S.view === "survivalIntro" && (k === "Enter" || k === " ")) {
+      ev.preventDefault(); goto("survival-start"); return;
+    }
+
+    if ((S.view === "practiceEnd" || S.view === "survivalEnd") && k === "Enter") {
+      ev.preventDefault();
+      goto(S.view === "practiceEnd" ? "survival" : "survival-start");
+    }
+  });
+
+  /* ==========================================================================
+     13. BOOT
+     ====================================================================== */
+  $("btn-sound").textContent = soundOn ? "🔊" : "🔇";
+  renderMenuFoot();
+  showView("menu");
+
+})();
+</script>
+</body>
+</html>
