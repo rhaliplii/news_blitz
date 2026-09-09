@@ -207,7 +207,7 @@ body.playing .frame{ margin:0 0 auto; }
 /* ------------------------------------------------------------------ menu */
 .brandbar{
   display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:var(--s7);
+  margin-bottom:var(--s5);
 }
 .wordmark{
   display:flex; align-items:center; gap:9px;
@@ -228,41 +228,35 @@ body.playing .frame{ margin:0 0 auto; }
 .iconbtn:hover{ color:var(--text); border-color:var(--line-2); background:var(--surface-2); }
 .iconbtn:active{ transform:scale(.92); }
 
-.hero{ text-align:center; margin-bottom:var(--s7); }
+.hero{ text-align:center; margin-bottom:var(--s5); }
 .hero h1{
-  font-size:clamp(46px, 15vw, 70px);
-  line-height:.92; font-weight:900; letter-spacing:-.045em;
-  margin:6px 0 14px;
+  font-size:clamp(34px, 10.5vw, 48px);
+  line-height:.95; font-weight:900; letter-spacing:-.045em;
+  margin:0 0 8px;
 }
 .hero h1 .accent{
   background:linear-gradient(115deg, var(--brand-hi) 10%, var(--brand-2) 55%, #6FE7C6 100%);
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 .hero .tag{
-  font-size:clamp(15px,4.2vw,17px); font-weight:600; color:var(--text-2); letter-spacing:-.01em;
+  font-size:clamp(15px,4.2vw,17px); font-weight:650; color:var(--text-hi); letter-spacing:-.01em;
+}
+.hero .tag-sub{
+  margin-top:5px; font-size:13.5px; font-weight:500; color:var(--text-3); line-height:1.4;
 }
 
-.welcome{ padding:var(--s5); margin-bottom:12px; text-align:center; }
-.welcome p{
-  font-size:14.5px; line-height:1.55; color:var(--text-2); text-wrap:pretty;
-}
 
 .section-title{
-  margin:var(--s6) 0 var(--s4); text-align:center;
+  margin:0 0 var(--s3); text-align:center;
   font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--text-3);
 }
 
-.howto{ padding:var(--s5); margin-bottom:var(--s5); }
-.howto h3{
-  display:flex; align-items:center; gap:9px; margin-bottom:var(--s4);
-  font-size:11.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--text-3);
+
+.fold summary .i{
+  font-size:17px; font-weight:800; line-height:1; letter-spacing:0;
+  color:var(--text-2);
 }
-.howto h3 .i{
-  width:18px; height:18px; border-radius:50%; display:grid; place-items:center;
-  background:var(--brand-soft); border:1px solid var(--brand-line); color:var(--brand-hi);
-  font-size:11px; font-weight:800; letter-spacing:0; font-style:italic;
-}
+.fold summary:hover .i{ color:#fff; }
 .howto ul{ display:grid; gap:15px; }
 .howto li{
   display:flex; gap:13px; align-items:center;
@@ -274,7 +268,36 @@ body.playing .frame{ margin:0 0 auto; }
   background:var(--surface-2); border:1px solid var(--line); font-size:14px;
 }
 
-.menu-actions{ display:grid; gap:10px; }
+.menu-actions{ display:grid; gap:10px; margin-bottom:var(--s5); }
+
+/* Supporting content collapses so the mode buttons stay above the fold. */
+.card.fold{ padding:0; margin-bottom:10px; }
+.fold summary{
+  display:flex; align-items:center; gap:10px;
+  padding:15px 18px; cursor:pointer; list-style:none;
+  font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-2);
+  transition:color .2s;
+}
+.fold summary::-webkit-details-marker{ display:none; }
+.fold summary::marker{ content:""; }
+.fold summary:hover{ color:#fff; }
+.fold summary:focus-visible{ outline:2px solid var(--brand-hi); outline-offset:-2px; border-radius:var(--r-lg); }
+.fold .sum{
+  margin-left:auto; font-size:11px; font-weight:700; letter-spacing:.04em;
+  text-transform:none; color:var(--gold);
+}
+.fold .caret{
+  margin-left:auto; flex:0 0 auto;
+  font-size:20px; line-height:1; color:var(--text-2);
+  transform:rotate(90deg);
+  transition:transform .25s var(--ease), color .2s;
+}
+.fold summary:hover .caret{ color:var(--brand-hi); }
+.fold[open] .caret{ transform:rotate(-90deg); }
+.fold .sum + .caret{ margin-left:9px; }
+.fold .body{ padding:2px 18px 18px; }
+.fold[open] .body{ animation:revealIn .3s var(--ease-out) both; }
 
 .mode-btn{
   display:flex; align-items:center; gap:14px; text-align:left;
@@ -292,7 +315,7 @@ body.playing .frame{ margin:0 0 auto; }
 }
 .mode-btn .txt{ flex:1; min-width:0; }
 .mode-btn .t{ display:block; font-size:16px; font-weight:700; letter-spacing:-.015em; }
-.mode-btn .d{ display:block; font-size:13px; color:var(--text-3); margin-top:2px; line-height:1.35; }
+.mode-btn .d{ display:block; font-size:14.5px; color:var(--text-2); margin-top:3px; line-height:1.4; }
 .mode-btn .arw{ color:var(--text-3); font-size:18px; transition:transform .2s var(--ease), color .2s; }
 .mode-btn:hover .arw{ transform:translateX(3px); color:var(--brand-hi); }
 
@@ -304,9 +327,6 @@ body.playing .frame{ margin:0 0 auto; }
 .mode-btn--hero:hover{ border-color:rgba(7,216,162,.5); background:linear-gradient(135deg, rgba(34,161,128,.26), rgba(7,216,162,.08) 60%, transparent); }
 .mode-btn--hero .ic{ background:linear-gradient(145deg, var(--brand-hi), var(--brand)); border-color:transparent; color:#06120E; box-shadow:0 6px 18px rgba(7,216,162,.28); }
 
-.menu-foot{
-  margin-top:var(--s6); display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
-}
 
 /* ------------------------------------------------------------------- HUD */
 .topbar{
@@ -565,14 +585,22 @@ body.playing .frame{ margin:0 0 auto; }
 
 .ticks{ display:grid; gap:15px; margin:22px 0; text-align:left; }
 .ticks li{
-  display:flex; gap:11px; align-items:center;
+  display:flex; gap:11px; align-items:flex-start;
   font-size:15.5px; font-weight:500; line-height:1.4; color:var(--text-hi);
 }
 .ticks li::before{
-  content:'\2713'; flex:0 0 20px; height:20px;
-  display:grid; place-items:center; border-radius:50%;
-  background:var(--brand-soft); border:1px solid var(--brand-line);
-  color:var(--brand-hi); font-size:11px; font-weight:800;
+  content:''; flex:0 0 6px; width:6px; height:6px; margin:8px 4px 0 5px;
+  border-radius:50%; background:var(--brand-hi);
+  box-shadow:0 0 0 3px rgba(7,216,162,.13);
+}
+.ticks .hearts-inline{ font-size:13px; letter-spacing:1px; white-space:nowrap; }
+
+/* nested detail under a rule, e.g. the coin table */
+.ticks .subticks{ display:grid; gap:8px; margin:9px 0 2px; }
+.ticks .subticks li{ font-size:14.5px; color:var(--text-2); gap:9px; }
+.ticks .subticks li::before{
+  flex-basis:4px; width:4px; height:4px; margin:9px 3px 0 2px;
+  background:var(--text-3); box-shadow:none;
 }
 
 /* --------------------------------------------------------- end screens */
@@ -646,43 +674,99 @@ body.playing .frame{ margin:0 0 auto; }
 .lbhead h2{ font-size:30px; font-weight:850; letter-spacing:-.035em; }
 .lbhead p{ font-size:14px; color:var(--text-3); margin-top:5px; }
 
-.lblist{ display:grid; gap:8px; margin-bottom:16px; }
+/* leaderboard table: rank / player / streak / avg / lives used */
+.lbtable{ display:grid; gap:6px; margin-bottom:16px; }
 .lbrow{
-  display:flex; align-items:center; gap:12px;
-  padding:13px 15px; border-radius:var(--r-md);
+  display:grid; grid-template-columns:30px 1fr 52px 60px 46px;
+  align-items:center; gap:8px;
+  padding:12px 13px; border-radius:var(--r-md);
   background:var(--surface); border:1px solid var(--line);
   animation:revealIn .35s var(--ease-out) both;
-  transition:border-color .2s, background .2s;
+  font-size:14px; color:var(--text-hi);
 }
+.lbrow--head{
+  background:transparent; border-color:transparent; padding:2px 13px 0;
+  font-size:9.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--text-3); animation:none;
+}
+.lbrow--head span:not(:nth-child(2)){ text-align:center; }
 .lbrow .rank{
-  flex:0 0 30px; height:30px; border-radius:9px; display:grid; place-items:center;
-  font-size:13px; font-weight:800; color:var(--text-2);
+  width:26px; height:26px; border-radius:8px; display:grid; place-items:center;
+  font-size:12.5px; font-weight:800; color:var(--text-2);
   background:var(--surface-2); border:1px solid var(--line);
 }
 .lbrow.r1 .rank{ background:linear-gradient(145deg,#FFD873,#E5A400); color:#3A2A00; border-color:transparent; }
 .lbrow.r2 .rank{ background:linear-gradient(145deg,#E4E9F0,#9AA4B2); color:#20242A; border-color:transparent; }
 .lbrow.r3 .rank{ background:linear-gradient(145deg,#E0A579,#B06E38); color:#2B1608; border-color:transparent; }
-.lbrow .who{ flex:1; min-width:0; }
 .lbrow .nm{
-  font-size:15px; font-weight:700; letter-spacing:-.015em;
+  font-size:14.5px; font-weight:650; letter-spacing:-.01em; color:#fff;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.lbrow .meta{ font-size:11.5px; color:var(--text-3); margin-top:2px; display:flex; gap:9px; flex-wrap:wrap; }
-.lbrow .coins{
-  flex:0 0 auto; text-align:right; font-size:17px; font-weight:850;
-  color:var(--gold); letter-spacing:-.02em;
-}
-.lbrow .coins small{ display:block; font-size:10px; font-weight:700; letter-spacing:.1em; color:var(--text-3); text-transform:uppercase; }
+.lbrow .c-streak{ color:#FF8A3D; font-weight:800; }
+.lbrow > span:not(.nm):not(.rank){ text-align:center; }
 .lbrow.you{
   border-color:var(--brand-line);
   background:linear-gradient(135deg, rgba(34,161,128,.16), rgba(26,28,32,.7));
-  box-shadow:0 0 0 1px rgba(7,216,162,.18), 0 10px 30px rgba(34,161,128,.12);
+  box-shadow:0 0 0 1px rgba(7,216,162,.18);
 }
 .lbrow.you .nm::after{
-  content:'YOU'; margin-left:8px; font-size:9.5px; font-weight:800; letter-spacing:.1em;
-  padding:2px 6px; border-radius:5px; vertical-align:middle;
+  content:'YOU'; margin-left:7px; font-size:9px; font-weight:800; letter-spacing:.1em;
+  padding:2px 5px; border-radius:5px; vertical-align:middle;
   background:var(--brand-hi); color:#06120E;
 }
+
+/* ---------------------------------------------------------------- toolshop */
+.bar-right{ display:flex; align-items:center; gap:8px; }
+.chip--coins{
+  cursor:pointer; color:var(--gold); border-color:rgba(251,188,4,.3);
+  background:rgba(251,188,4,.09); font-size:12px; letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+}
+.chip--coins:hover{ border-color:rgba(251,188,4,.55); background:rgba(251,188,4,.14); }
+
+.balance{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px; margin-bottom:12px;
+}
+.balance .l{ font-size:11px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--text-3); }
+.balance .v{ font-size:26px; font-weight:850; letter-spacing:-.03em; color:var(--gold); }
+
+.packs{ display:grid; gap:8px; }
+.pack{
+  display:flex; align-items:center; gap:13px; text-align:left; width:100%;
+  padding:15px 16px; border-radius:var(--r-md);
+  border:1px solid var(--line); background:var(--surface);
+  transition:transform .14s var(--ease), border-color .2s, background .2s;
+}
+.pack:hover{ background:var(--surface-2); border-color:var(--line-2); transform:translateY(-1px); }
+.pack:active{ transform:scale(.985); }
+.pack .ic{ font-size:20px; flex:0 0 auto; }
+.pack .txt{ flex:1; min-width:0; }
+.pack .t{ display:block; font-size:15.5px; font-weight:700; letter-spacing:-.015em; color:#fff; }
+.pack .d{ display:block; font-size:13px; color:var(--text-3); margin-top:2px; }
+.pack .price{
+  flex:0 0 auto; font-size:16px; font-weight:850; color:var(--gold); letter-spacing:-.02em;
+}
+.pack.locked{ opacity:.62; }
+.pack.locked .price{ color:var(--text-3); }
+
+.ts-note{ margin-top:9px; font-size:12px; color:var(--text-3); text-align:center; line-height:1.45; }
+
+/* --------------------------------------------------------- daily missions */
+
+.missions ul{ display:grid; gap:13px; }
+.missions li{ display:flex; align-items:center; gap:11px; font-size:15px; color:var(--text-hi); }
+.missions .tick{
+  flex:0 0 20px; height:20px; border-radius:50%;
+  display:grid; place-items:center; font-size:11px; font-weight:800;
+  background:var(--surface-2); border:1px solid var(--line); color:var(--text-3);
+}
+.missions li.done .tick{ background:var(--brand-soft); border-color:var(--brand-line); color:var(--brand-hi); }
+.missions .lbl{ flex:1; min-width:0; font-weight:500; }
+.missions .meta{ font-size:12.5px; color:var(--text-3); }
+.missions .reward{ font-size:13px; font-weight:800; color:var(--gold); flex:0 0 auto; }
+.missions li.done .lbl{ color:var(--text-2); }
+
 .empty{ text-align:center; padding:44px 20px; color:var(--text-3); }
 .empty .em{ font-size:40px; display:block; margin-bottom:12px; opacity:.6; }
 .empty p{ font-size:14.5px; line-height:1.5; }
@@ -715,7 +799,25 @@ body.playing .frame{ margin:0 0 auto; }
 .modal .em{ font-size:44px; line-height:1; display:block; margin-bottom:10px; animation:pop .5s var(--snap) both; }
 .modal h2{ font-size:clamp(21px,6vw,24px); font-weight:850; letter-spacing:-.03em; line-height:1.2; }
 .modal .sub{ margin-top:11px; font-size:15px; font-weight:500; line-height:1.5; color:var(--text-hi); text-wrap:pretty; }
-.modal .stack{ margin-top:22px; }
+.modal-stats{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:18px;
+}
+.modal-stats[hidden]{ display:none !important; }
+.modal-stats > div{
+  padding:11px 6px; border-radius:var(--r-sm);
+  background:var(--surface); border:1px solid var(--line);
+}
+.modal-stats .l{
+  display:block; font-size:9.5px; font-weight:700; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--text-3);
+}
+.modal-stats .v{
+  display:block; margin-top:3px; font-size:17px; font-weight:850; letter-spacing:-.02em;
+}
+.modal-stats > div:last-child .v{ color:var(--gold); }
+
+.kpi--wide{ grid-column:span 2; }
+.modal .stack{ margin-top:18px; }
 .modal .hint{ margin-top:12px; font-size:12.5px; color:var(--text-3); }
 .modal .hint:empty{ display:none; }
 
@@ -748,8 +850,25 @@ body.playing .frame{ margin:0 0 auto; }
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+/* Disabled state, declared after every button variant so it always wins.
+   Without this a disabled gold button keeps its dark label on a dark fill. */
+.btn[disabled],
+.btn[disabled]:hover,
+.btn[disabled]:active{
+  background:var(--surface-2);
+  border-color:var(--line);
+  color:var(--text-3);
+  box-shadow:none;
+  opacity:1;
+  transform:none;
+  cursor:default;
+}
+.btn[disabled]::after{ opacity:0; }
+
 /* ------------------------------------------------------------ responsive */
 @media (max-width:380px){
+  .lbrow{ grid-template-columns:26px 1fr 40px 52px 38px; gap:6px; padding:11px 10px; font-size:13px; }
+  .lbrow .nm{ font-size:13.5px; }
   .stat .v{ font-size:17px; }
   .ans{ padding:17px 8px; }
   .ans .glyph{ width:26px; height:26px; }
@@ -785,27 +904,20 @@ body.playing .frame{ margin:0 0 auto; }
     <div class="hero">
       <h1 id="menu-title">News <span class="accent">Blitz</span></h1>
       <p class="tag">React Fast or Miss the Move!</p>
+      <p class="tag-sub">Test your market reaction to breaking financial news.</p>
     </div>
 
-    <div class="card welcome">
-      <p>Test your market intuition by reacting to breaking financial news.
-         Is it Bullish 📈 or Bearish 📉? The faster you respond, the higher your score!</p>
-    </div>
-
-    <div class="card howto">
-      <h3><span class="i">i</span>How to Play</h3>
-      <ul>
-        <li><span class="ic">📰</span><span>You&rsquo;ll see a breaking news headline</span></li>
-        <li><span class="ic">⚡</span><span>Tap &ldquo;Bullish&rdquo; 📈 or &ldquo;Bearish&rdquo; 📉 within the time limit</span></li>
-        <li><span class="ic">❤️</span><span>Correct answers earn points, wrong answers cost lives</span></li>
-        <li><span class="ic">⏱️</span><span>In Survival Mode, the clock gets faster as you progress!</span></li>
-      </ul>
-    </div>
-
-    <div class="card missions">
-      <h3>Daily Missions</h3>
-      <ul id="mission-list"></ul>
-    </div>
+    <details class="card fold howto" id="fold-howto" open>
+      <summary><span class="i">?</span>How to Play<span class="caret">&rarr;</span></summary>
+      <div class="body">
+        <ul>
+          <li><span class="ic">📰</span><span>You&rsquo;ll see a breaking news headline</span></li>
+          <li><span class="ic">⚡</span><span>Tap &ldquo;Bullish&rdquo; 📈 or &ldquo;Bearish&rdquo; 📉 within the time limit</span></li>
+          <li><span class="ic">❤️</span><span>Correct answers earn points, wrong answers cost lives</span></li>
+          <li><span class="ic">⏱️</span><span>In Survival Mode, the clock gets faster as you progress!</span></li>
+        </ul>
+      </div>
+    </details>
 
     <h3 class="section-title">Choose Your Mode</h3>
 
@@ -813,7 +925,7 @@ body.playing .frame{ margin:0 0 auto; }
       <button class="mode-btn" data-go="practice">
         <span class="ic">🎓</span>
         <span class="txt">
-          <span class="t">Start Practice</span>
+          <span class="t">Practice Mode</span>
           <span class="d">10 questions with no time pressure. Learn the ropes!</span>
         </span>
         <span class="arw">→</span>
@@ -822,7 +934,7 @@ body.playing .frame{ margin:0 0 auto; }
       <button class="mode-btn mode-btn--hero" data-go="survival">
         <span class="ic">🔥</span>
         <span class="txt">
-          <span class="t">Play Survival Mode</span>
+          <span class="t">Survival Mode</span>
           <span class="d">Real challenge! Time decreases with each correct answer. Limited lives!</span>
         </span>
         <span class="arw">→</span>
@@ -838,7 +950,10 @@ body.playing .frame{ margin:0 0 auto; }
       </button>
     </div>
 
-    <div class="menu-foot" id="menu-foot"></div>
+    <details class="card fold missions" id="fold-missions">
+      <summary>Daily Missions<span class="sum num" id="mission-summary"></span><span class="caret">&rarr;</span></summary>
+      <div class="body"><ul id="mission-list"></ul></div>
+    </details>
   </section>
 
   <!-- ========================================== VIEW: PRACTICE INTRO == -->
@@ -879,15 +994,20 @@ body.playing .frame{ margin:0 0 auto; }
     <div class="card intro">
       <span class="em">&#128293;</span>
       <h2 id="si-title">Survival Mode</h2>
-      <p class="sub">In Survival Mode, time speeds up, and you only have 3 lives. Can you survive?</p>
+      <p class="sub">React to financial news as fast as possible before time runs out!</p>
 
       <ul class="ticks">
-        <li>You start with 2 lives</li>
+        <li>You start with 2 lives <span class="hearts-inline">❤️❤️</span></li>
         <li>Each mistake costs 1 life</li>
-        <li>Time per question decreases as you progress, down to 1.0s</li>
+        <li>Time per question decreases as you progress</li>
         <li>Every 10 correct answers in a row = +1 life (max 3)</li>
-        <li>+10 Coins every 5 correct in a row</li>
-        <li>+50 Coins for a 20 streak, +50 for every 60s survived</li>
+        <li><span>Earn Profit Coins for your streaks:
+          <ul class="subticks">
+            <li>+10 Coins for every 5 consecutive correct answers</li>
+            <li>+50 Coins for a 20 streak</li>
+            <li>+50 for every 60 seconds survived</li>
+          </ul>
+        </span></li>
       </ul>
 
       <div class="stack">
@@ -992,9 +1112,10 @@ body.playing .frame{ margin:0 0 auto; }
 
       <div class="grid2">
         <div class="kpi kpi--fire"><div class="l">Best Run</div><div class="v num" id="se-streak">0</div></div>
+        <div class="kpi"><div class="l">Streaks</div><div class="v num" id="se-streaks">0</div></div>
         <div class="kpi"><div class="l">Avg Reaction</div><div class="v num" id="se-rt">0.00s</div></div>
         <div class="kpi"><div class="l">Correct Calls</div><div class="v num" id="se-correct">0</div></div>
-        <div class="kpi"><div class="l">Accuracy</div><div class="v num" id="se-acc">0%</div></div>
+        <div class="kpi kpi--wide"><div class="l">Accuracy</div><div class="v num" id="se-acc">0%</div></div>
       </div>
 
       <div id="se-submit">
@@ -1074,6 +1195,7 @@ body.playing .frame{ margin:0 0 auto; }
     <span class="em" id="modal-em">🔥</span>
     <h2 id="modal-title"></h2>
     <p class="sub" id="modal-sub"></p>
+    <div class="modal-stats" id="modal-stats" hidden></div>
     <div class="stack" id="modal-actions"></div>
     <p class="hint" id="modal-hint"></p>
   </div>
@@ -1417,6 +1539,7 @@ body.playing .frame{ margin:0 0 auto; }
     livesUsed: 0,     // lives consumed this run, ranks the leaderboard
     runStart: 0,      // performance.now() when the run began
     minutes: 0,       // 60s survival bonuses already paid
+    streaks: 0,       // completed 5-in-a-row streaks
     boostShown: false,
     limit: 0,          // current question time budget (ms)
     startedAt: 0,      // performance.now() when the headline became visible
@@ -1456,6 +1579,7 @@ body.playing .frame{ margin:0 0 auto; }
     menu: "view-menu",
     practiceIntro: "view-practice-intro",
     survivalIntro: "view-survival-intro",
+    toolshop: "view-toolshop",
     game: "view-game",
     practiceEnd: "view-practice-end",
     survivalEnd: "view-survival-end",
@@ -1474,12 +1598,13 @@ body.playing .frame{ margin:0 0 auto; }
   function goto(dest) {
     stopTimer();
     if (MODAL.open) closeModal();
-    if (dest === "menu")             { S.mode = null; renderMenuFoot(); showView("menu"); }
+    if (dest === "menu")             { S.mode = null; renderWallet(); renderMissions(); showView("menu"); }
     else if (dest === "practice")    { showView("practiceIntro"); }
     else if (dest === "practice-start") { startRun("practice"); }
     else if (dest === "survival")    { showView("survivalIntro"); }
     else if (dest === "survival-start") { startRun("survival"); }
     else if (dest === "leaderboard") { renderLeaderboard(); showView("leaderboard"); }
+    else if (dest === "toolshop")    { renderToolshop(); showView("toolshop"); }
   }
 
   /* ==========================================================================
@@ -1581,6 +1706,22 @@ body.playing .frame{ margin:0 0 auto; }
     }
   }
 
+  /* Lifetime and daily counters, and the missions that hang off them. */
+  function recordRun() {
+    STATS.games += 1;
+    STATS.correct += S.correct;
+    // personal best is a Survival record: practice runs must not beat it
+    if (S.mode === "survival" && S.bestStreak > STATS.bestStreak) {
+      STATS.bestStreak = S.bestStreak;
+      DAILY.pbHit = true;
+      saveDaily();
+    }
+    saveStats();
+    DAILY.games += 1;
+    saveDaily();
+    checkMissions();
+  }
+
   function avg(list) {
     if (!list.length) return 0;
     var sum = 0, i;
@@ -1593,7 +1734,7 @@ body.playing .frame{ margin:0 0 auto; }
     S.deck = shuffle(NEWS);
     S.idx = 0; S.answered = 0; S.correct = 0; S.rts = [];
     S.streak = 0; S.bestStreak = 0; S.coins = 0;
-    S.livesUsed = 0; S.minutes = 0; S.boostShown = false;
+    S.livesUsed = 0; S.minutes = 0; S.streaks = 0; S.boostShown = false;
     S.runStart = performance.now();
     if (mode === "survival") {
       S.lives = Math.min(CFG.livesMax, tier().lives + (WALLET.lives || 0));
@@ -1769,7 +1910,7 @@ body.playing .frame{ margin:0 0 auto; }
   function survivalRewards() {
     var gross = 0, reasons = [];
 
-    if (S.streak % 5 === 0) { gross += CFG.coinsPerFive; reasons.push("5 in a row"); }
+    if (S.streak % 5 === 0) { gross += CFG.coinsPerFive; S.streaks++; reasons.push("5 in a row"); }
     if (S.streak % CFG.streakBonusAt === 0) {
       gross += CFG.coinsPerStreakBonus;
       reasons.push(CFG.streakBonusAt + " streak");
@@ -1834,7 +1975,8 @@ body.playing .frame{ margin:0 0 auto; }
      ====================================================================== */
   function endPractice() {
     stopTimer();
-    var score = S.correct, pct = Math.round((score / CFG.practiceCount) * 100);
+    recordRun();
+    var score = S.correct;
     var tier =
       score === 10 ? { em: "🏆", t: "Flawless Read", s: "Ten for ten. The tape has no secrets from you." } :
       score >= 8   ? { em: "🎯", t: "Sharp Instincts", s: "Strong market read. Survival Mode is where it counts." } :
@@ -1846,22 +1988,18 @@ body.playing .frame{ margin:0 0 auto; }
     $("pe-title").textContent = tier.t;
     $("pe-sub").textContent = tier.s;
     $("pe-score").textContent = score;
-    $("pe-acc").textContent = pct + "%";
     $("pe-rt").textContent = S.rts.length ? secs(avg(S.rts)) : "—";
-    $("pe-best").textContent = S.fastest === Infinity ? "—" : secs(S.fastest);
-
-    var bar = $("pe-bar");
-    bar.style.width = "0%";
     showView("practiceEnd");
-    requestAnimationFrame(function () { bar.style.width = pct + "%"; });
     setTimeout(function () { if (S.view === "practiceEnd") showProUpsell(); }, 900);
   }
 
   function endSurvival() {
     stopTimer();
+    recordRun();
     var pct = S.answered ? Math.round((S.correct / S.answered) * 100) : 0;
     $("se-coins").textContent = fmt(S.coins);
     $("se-streak").textContent = S.bestStreak;
+    $("se-streaks").textContent = S.streaks;
     $("se-rt").textContent = S.rts.length ? secs(avg(S.rts)) : "—";
     $("se-correct").textContent = S.correct;
     $("se-acc").textContent = pct + "%";
@@ -1891,9 +2029,14 @@ body.playing .frame{ margin:0 0 auto; }
     return Array.isArray(b) ? b : [];
   }
 
+  /* Ranking order set by the spec: highest streak, then fastest average
+     reaction, then fewest lives used. */
   function sortBoard(b) {
     return b.slice().sort(function (x, y) {
-      return (y.coins - x.coins) || (y.streak - x.streak) || (x.rt - y.rt);
+      return (y.streak - x.streak) ||
+             (x.rt - y.rt) ||
+             ((x.livesUsed === undefined ? 99 : x.livesUsed) -
+              (y.livesUsed === undefined ? 99 : y.livesUsed));
     });
   }
 
@@ -1907,6 +2050,7 @@ body.playing .frame{ margin:0 0 auto; }
       coins: S.coins,
       streak: S.bestStreak,
       rt: S.rts.length ? Math.round(avg(S.rts)) : 0,
+      livesUsed: S.livesUsed,
       correct: S.correct,
       date: Date.now()
     };
@@ -1938,19 +2082,17 @@ body.playing .frame{ margin:0 0 auto; }
       return;
     }
 
-    list.innerHTML = board.map(function (e, i) {
+    var head = '<div class="lbrow lbrow--head">' +
+        "<span>#</span><span>Player</span><span>Streak</span><span>Avg</span><span>Lives</span></div>";
+
+    list.innerHTML = head + board.map(function (e, i) {
       var mine = e.id === lastId;
-      var when = new Date(e.date);
-      var dateStr = when.toLocaleDateString(undefined, { month: "short", day: "numeric" });
       return '<div class="lbrow r' + (i + 1) + (mine ? " you" : "") + '" style="animation-delay:' + (i * 30) + 'ms">' +
-        '<div class="rank num">' + (i + 1) + "</div>" +
-        '<div class="who">' +
-          '<div class="nm">' + escapeHtml(e.name) + "</div>" +
-          '<div class="meta"><span class="num">🔥 ' + e.streak + " in a row</span>" +
-            '<span class="num">⚡ ' + (e.rt / 1000).toFixed(2) + "s avg</span>" +
-            "<span>" + dateStr + "</span></div>" +
-        "</div>" +
-        '<div class="coins num">' + fmt(e.coins) + "<small>coins</small></div>" +
+        '<span class="rank num">' + (i + 1) + "</span>" +
+        '<span class="nm">' + escapeHtml(e.name) + "</span>" +
+        '<span class="num c-streak">' + e.streak + "</span>" +
+        '<span class="num">' + (e.rt ? (e.rt / 1000).toFixed(2) + "s" : "—") + "</span>" +
+        '<span class="num">' + (e.livesUsed === undefined ? "—" : e.livesUsed) + "</span>" +
       "</div>";
     }).join("");
   }
@@ -1959,18 +2101,6 @@ body.playing .frame{ margin:0 0 auto; }
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
-  }
-
-  function renderMenuFoot() {
-    var board = sortBoard(getBoard());
-    var foot = $("menu-foot");
-    var bits = [];
-    if (board.length) {
-      bits.push('<span class="chip">🪙 Best ' + fmt(board[0].coins) + " coins</span>");
-      bits.push('<span class="chip">🔥 Best run ' + board[0].streak + "</span>");
-    }
-    bits.push('<span class="chip">⌨️ ← Bullish · → Bearish</span>');
-    foot.innerHTML = bits.join("");
   }
 
   /* ==========================================================================
@@ -1983,6 +2113,12 @@ body.playing .frame{ margin:0 0 auto; }
     $("modal-title").textContent = cfg.title || "";
     $("modal-sub").textContent = cfg.sub || "";
     $("modal-hint").textContent = cfg.hint || "";
+
+    var stats = $("modal-stats");
+    stats.hidden = !cfg.stats;
+    stats.innerHTML = !cfg.stats ? "" : cfg.stats.map(function (st) {
+      return '<div><span class="l">' + st.l + '</span><span class="v num">' + st.v + "</span></div>";
+    }).join("");
 
     var box = $("modal-actions");
     box.innerHTML = "";
@@ -2019,7 +2155,7 @@ body.playing .frame{ margin:0 0 auto; }
     openModal({
       em: "🔥",
       title: "Go PRO",
-      sub: "PRO Users start with 4 lives instead of 2 in Survival Mode! Upgrade now.",
+      sub: "PRO Users start with 4 lives instead of 2 in Survival Mode!",
       actions: [
         { label: "Upgrade to PRO", cls: "btn--primary",
           onClick: function () { openLink("pro", "The PRO upgrade"); } },
@@ -2036,6 +2172,11 @@ body.playing .frame{ margin:0 0 auto; }
       em: "🔥",
       title: "You were on fire!",
       sub: "Want to continue?",
+      stats: [
+        { l: "Avg. Reaction", v: S.rts.length ? secs(avg(S.rts)) : "—" },
+        { l: "Streaks",       v: S.streaks },
+        { l: "Coins Earned",  v: fmt(S.coins) }
+      ],
       hint: canAfford
         ? "You have " + fmt(WALLET.coins) + " Profit Coins"
         : "You have " + fmt(WALLET.coins) + " of " + fmt(CFG.continueCost) + " coins needed",
@@ -2061,6 +2202,131 @@ body.playing .frame{ margin:0 0 auto; }
   }
 
   /* ==========================================================================
+     11c. TOOLSHOP AND DAILY MISSIONS
+     ====================================================================== */
+  function renderToolshop() {
+    $("ts-balance").textContent = fmt(WALLET.coins);
+    var box = $("ts-packs");
+    box.innerHTML = "";
+
+    PACKS.forEach(function (pk) {
+      var locked = pk.proPlus && PLAN !== "proplus";
+      var afford = WALLET.coins >= pk.price;
+      var row = document.createElement("button");
+      row.className = "pack" + (locked ? " locked" : "");
+      row.innerHTML =
+        '<span class="ic">' + (pk.lives ? "❤️" : "♾️") + "</span>" +
+        '<span class="txt"><span class="t">' + pk.label + "</span>" +
+          '<span class="d">' + (locked ? "PRO+ members only"
+                                       : (pk.lives ? "Start your next run with " + pk.lives + " lives"
+                                                   : "No life limit for one hour")) + "</span></span>" +
+        '<span class="price num">' + fmt(pk.price) + "</span>";
+      row.addEventListener("click", function () { buyPack(pk, locked, afford); });
+      box.appendChild(row);
+    });
+  }
+
+  function buyPack(pk, locked, afford) {
+    if (locked) {
+      openModal({
+        em: "💎", title: "PRO+ only",
+        sub: "Unlimited lives for an hour is part of the PRO+ plan.",
+        actions: [
+          { label: "Upgrade to PRO+", cls: "btn--primary",
+            onClick: function () { openLink("pro", "The PRO+ upgrade"); } },
+          { label: "Close", cls: "btn--ghost", onClick: closeModal }
+        ]
+      });
+      return;
+    }
+    if (!afford) { toast("Not enough coins — you need " + fmt(pk.price)); return; }
+    if (!spend(pk.price)) return;
+    WALLET.lives = Math.min(CFG.livesMax, (WALLET.lives || 0) + pk.lives);
+    saveWallet();
+    SFX.life();
+    toast("❤️ " + pk.lives + " lives added to your next run");
+    renderToolshop();
+    renderWallet();
+  }
+
+  /* Rewarded video placeholder: the loop is real, the ad is not. */
+  function watchAd() {
+    var left = 3;
+    openModal({
+      em: "📺", title: "Ad placeholder",
+      sub: "No ad network is connected in this build. Crediting the reward in " + left + "s.",
+      actions: [{ label: "Skip", cls: "btn--ghost", onClick: function () { clearInterval(t); closeModal(); } }]
+    });
+    var t = setInterval(function () {
+      left--;
+      if (left > 0) {
+        $("modal-sub").textContent =
+          "No ad network is connected in this build. Crediting the reward in " + left + "s.";
+        return;
+      }
+      clearInterval(t);
+      closeModal();
+      credit(CFG.adReward, "rewarded video");
+      SFX.coin();
+      renderToolshop();
+      renderWallet();
+    }, 1000);
+  }
+
+  var MISSIONS = [
+    { id: "play3", label: "Play 3 games", reward: 10,
+      progress: function () { return Math.min(DAILY.games, 3) + "/3"; },
+      done: function () { return DAILY.games >= 3; },
+      claimed: function () { return DAILY.play3; },
+      claim: function () { DAILY.play3 = true; saveDaily(); } },
+    { id: "pb", label: "Beat personal best", reward: 10,
+      progress: function () { return "best " + STATS.bestStreak; },
+      done: function () { return DAILY.pbHit === true; },
+      claimed: function () { return DAILY.pb; },
+      claim: function () { DAILY.pb = true; saveDaily(); } },
+    { id: "c100", label: "Reach 100 total correct", reward: 50,
+      progress: function () { return Math.min(STATS.correct, 100) + "/100"; },
+      done: function () { return STATS.correct >= 100; },
+      claimed: function () { return STATS.hit100; },
+      claim: function () { STATS.hit100 = true; saveStats(); } }
+  ];
+
+  function renderMissions() {
+    var claimed = 0, available = 0;
+    MISSIONS.forEach(function (m) {
+      if (m.claimed()) claimed++; else available += m.reward;
+    });
+    $("mission-summary").textContent =
+      claimed + "/" + MISSIONS.length + (available ? " · +" + available + " available" : " · all claimed");
+
+    $("mission-list").innerHTML = MISSIONS.map(function (m) {
+      var done = m.done(), claimed = m.claimed();
+      return '<li class="' + (claimed ? "done" : "") + '">' +
+        '<span class="tick">' + (claimed ? "✓" : (done ? "!" : "")) + "</span>" +
+        '<span class="lbl">' + m.label + "</span>" +
+        '<span class="meta num">' + (claimed ? "claimed" : m.progress()) + "</span>" +
+        '<span class="reward num">+' + m.reward + "</span></li>";
+    }).join("");
+  }
+
+  /* Missions pay out the moment their condition is met. */
+  function checkMissions() {
+    MISSIONS.forEach(function (m) {
+      if (!m.claimed() && m.done()) {
+        m.claim();
+        credit(m.reward, m.label);
+      }
+    });
+    renderMissions();
+    renderWallet();
+  }
+
+  function renderWallet() {
+    $("wallet-coins").textContent = fmt(WALLET.coins);
+    if (S.mode === "survival" && HUD.coins) HUD.coins.textContent = fmt(WALLET.coins);
+  }
+
+  /* ==========================================================================
      12. EVENT WIRING
      ====================================================================== */
   document.addEventListener("click", function (ev) {
@@ -2073,7 +2339,8 @@ body.playing .frame{ margin:0 0 auto; }
   on(D.bear, "click", function () { answer("bear"); });
   on(D.nextBtn, "click", advance);
   on($("btn-submit-score"), "click", submitScore);
-  on($("btn-toolshop"), "click", function () { openLink("toolshop", "The Toolshop"); });
+  on($("btn-ad"), "click", watchAd);
+  on($("btn-wallet"), "click", function () { goto("toolshop"); });
   on($("modal-scrim"), "click", function () { if (MODAL.onDismiss) MODAL.onDismiss(); });
 
   on($("se-name"), "keydown", function (ev) {
@@ -2094,7 +2361,6 @@ body.playing .frame{ margin:0 0 auto; }
       store(KEY.board, []);
       store(KEY.last, null);
       renderLeaderboard();
-      renderMenuFoot();
       toast("Leaderboard cleared");
     }
   });
@@ -2147,8 +2413,10 @@ body.playing .frame{ margin:0 0 auto; }
   /* ==========================================================================
      13. BOOT
      ====================================================================== */
+  loadProgress();
   $("btn-sound").textContent = soundOn ? "🔊" : "🔇";
-  renderMenuFoot();
+  renderWallet();
+  renderMissions();
   showView("menu");
 
 })();
